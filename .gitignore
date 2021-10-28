@@ -1,0 +1,28 @@
+# Build products
+obj/
+bin/
+/dist/
+/coverage/
+/Stamp.props
+/out/
+
+# Visual Studio
+.vs/
+*.user
+
+# Temporary files
+*.log
+*.old
+*.tmp
+
+# Git
+*.orig
+*.patch
+*.rej
+
+# Windows junk
+Thumbs.db
+Desktop.ini
+
+# macOS junk
+.DS_Store
