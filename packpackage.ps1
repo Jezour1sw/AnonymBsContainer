@@ -21,7 +21,7 @@ param(
 )
 $moduleName = 'AnonymBsContainer'
 $nuget = 'nuget.exe'
-$nuget = 'C:\Users\A\Downloads\nuget.exe'
+#$nuget = 'C:\Users\A\Downloads\nuget.exe'
 $outPath = "$PSScriptRoot/out/$moduleName"
 $nugetDir = "$PSScriptRoot/out/nuget/"
 if (Test-Path $nugetDir) {
