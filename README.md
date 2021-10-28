@@ -1,6 +1,6 @@
 # Powershell CmdLet to enable Anonymization of blobs
 
-[![Build](https://github.com/Jezour/AnonymBsContainer/actions/workflows/main.yml/badge.svg)](https://github.com/Jezour/AnonymBsContainer/actions/workflows/main.yml)
+[![Build](https://github.com/Jezour1sw/AnonymBsContainer/actions/workflows/main.yml/badge.svg)](https://github.com/Jezour1sw/AnonymBsContainer/actions/workflows/main.yml)
 
 ## Description
 
