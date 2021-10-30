@@ -82,7 +82,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         shell: pwsh
         run:
-          dotnet nuget push "/out/out/nuget/*.nupkg"
+          dotnet nuget push "/out/nuget/*.nupkg"
           -s https://www.powershellgallery.com/
           -k $env:PSGALLERY_API_KEY
           --skip-duplicate
