@@ -43,9 +43,9 @@ jobs:
           # PowerShell script 
           ./build.ps1 -Configuration 'Release'
 
-      - name: Fetch master for GitVersion
-        if: github.ref != 'refs/heads/master'
-        run: git branch --create-reflog master origin/master
+      - name: Fetch main for GitVersion
+        if: github.ref != 'refs/heads/main'
+        run: git branch --create-reflog main origin/main
 
       - name: GitVersion
         id: gitversion  # step id used as reference for output values
