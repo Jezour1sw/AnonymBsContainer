@@ -158,7 +158,7 @@ namespace AnonymBs.Cmdlets
             swCounterOfItems.Stop();
             WriteVerbose($"Items to process: {totalItemCounter} [Counting time of items to process: {swCounterOfItems.Elapsed}]");
 
-            bool doContinue;
+            bool isLoadingFinished;
             do
             {
                 WrapperBlobItem wrapperBlobItem = _copyAnonymBsContainer.LoadNextBatchForProcessing();
@@ -202,10 +202,10 @@ namespace AnonymBs.Cmdlets
 
                 WriteProgress(_progressRecord);
 
-                doContinue = wrapperBlobItem.IsFull(MaxParallelDownloads);
+                isLoadingFinished = wrapperBlobItem.IsLoadingFinished();
 
             }
-            while (doContinue);
+            while (!isLoadingFinished);
 
             _progressRecord.PercentComplete = 100;
             _progressRecord.RecordType = ProgressRecordType.Completed;
