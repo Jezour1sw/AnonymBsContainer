@@ -61,9 +61,9 @@ jobs:
 #        if: github.ref != 'refs/heads/main'
 #        run: git branch --create-reflog main origin/main
 
-      - name: GitVersion
-        id: gitversion  # step id used as reference for output values
-        uses: roryprimrose/rungitversion@v1.0.0
+#      - name: GitVersion
+#        id: gitversion  # step id used as reference for output values
+#        uses: roryprimrose/rungitversion@v1.0.0
 
       - name: Pack package
         shell: pwsh
