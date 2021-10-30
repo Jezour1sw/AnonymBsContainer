@@ -75,11 +75,11 @@ jobs:
 #          name: Packages
 #          path: /out/AnonymBsContainer
 #          if-no-files-found: error
-      - name: Pack package
+
+      - name: Write github.ref
         shell: pwsh
-        run: 
-          # PowerShell script
-          Write-Host "github.ref: ${{github.ref}}"
+        run:
+          Write-Output 'github.ref: ${{github.ref}}'
 
       - name: Publish Package
         if: startsWith(github.ref, 'refs/remotes/origin/main')
