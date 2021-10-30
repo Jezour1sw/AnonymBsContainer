@@ -42,6 +42,7 @@ $moduleTagIncludesFunction = 'PSIncludes_Function'
 $moduleTagFunction = 'PSFunction'
 $moduleTagCommand = 'PSCommand'
 
+Update-ModuleManifest -Path $moduleManifestFile -ModuleVersion $moduleVersion
 $moduleManifest = Test-ModuleManifest -Path $moduleManifestFile
 $moduleDescription = $moduleManifest.Description
 $moduleAuthor = $moduleManifest.Author

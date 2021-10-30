@@ -57,8 +57,8 @@ jobs:
         shell: pwsh
         run: 
           # PowerShell script
-          $SemVer = (dotnet-gitversion | ConvertFrom-Json).SemVer;
-          ./packpackage.ps1 -Version $SemVer;
+          $MajorMinorPatch = (dotnet-gitversion | ConvertFrom-Json).MajorMinorPatch;
+          ./packpackage.ps1 -Version $MajorMinorPatch;
 
       - run: echo ${{github.ref}}
 
