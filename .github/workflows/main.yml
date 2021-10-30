@@ -66,7 +66,7 @@ jobs:
         run: 
           # PowerShell script
           $SemVer = (dotnet-gitversion | ConvertFrom-Json).SemVer;
-          ./packpackage.ps1 -Version $SemVer
+          ./packpackage.ps1 -Version $SemVer;
 
 #      - name: Save Package
 #        uses: actions/upload-artifact@v2
@@ -75,11 +75,16 @@ jobs:
 #          name: Packages
 #          path: /out/AnonymBsContainer
 #          if-no-files-found: error
+      - name: Pack package
+        shell: pwsh
+        run: 
+          # PowerShell script
+          Write-Host "github.ref: ${{github.ref}}"
 
       - name: Publish Package
-        if: startsWith(github.ref, 'refs/heads/main/')
+        if: startsWith(github.ref, 'refs/remotes/origin/main')
         shell: pwsh
-        run: >
+        run:
           dotnet nuget push "/out/out/nuget/*.nupkg"
           -s https://www.powershellgallery.com/
           -k $env:PSGALLERY_API_KEY
