@@ -15,9 +15,12 @@
 #>
 
 param(
-    [ValidateSet('Debug', 'Release')]
+    [Parameter(
+        Mandatory = $true,
+        HelpMessage = "Version should be set"
+    )]
     [string]
-    $Configuration = 'Debug'
+    $Version
 )
 $moduleName = 'AnonymBsContainer'
 $nuget = 'nuget.exe'
@@ -31,7 +34,7 @@ if (Test-Path $nugetDir) {
 New-Item -Path $nugetDir -ItemType Directory
 
 
-$moduleVersion = '1.0.0' #$Env:VersionVariable
+$moduleVersion = $Version
 $moduleManifestFile = "$outPath/$moduleName.psd1"
 $nuspecFullName = "$outPath/$moduleName.nuspec"
 $moduleTagModule = 'PSModule'

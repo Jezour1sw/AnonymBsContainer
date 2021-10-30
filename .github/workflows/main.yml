@@ -36,7 +36,6 @@ jobs:
 #        with:
 #          dotnet-version: 4.6.x
 
-
       # Runs a single command using the runners shell
       - name: Rebuild the powershell module
         shell: pwsh
@@ -48,7 +47,9 @@ jobs:
         shell: pwsh
         run: 
           # PowerShell script 
-          ./packpackage.ps1
+          ./packpackage.ps1 -Version $env:GITVERSIONNUMBER
+        env:
+          GITVERSIONNUMBER: $(GitVersion.SemVer)
 
 #      - name: Save Package
 #        uses: actions/upload-artifact@v2
