@@ -76,10 +76,7 @@ jobs:
 #          path: /out/AnonymBsContainer
 #          if-no-files-found: error
 
-      - name: Write github.ref
-        shell: pwsh
-        run:
-          Write-Output 'github.ref: ${{github.ref}}'
+      - run: echo ${{github.ref}}
 
       - name: Publish Package
         if: startsWith(github.ref, 'refs/remotes/origin/main')
