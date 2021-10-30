@@ -24,10 +24,12 @@ namespace AnonymBs.Engine
     public class WrapperBlobItem
     {
         public readonly IReadOnlyList<BlobItem> _listBlobItems = new List<BlobItem>();
+        private readonly bool _isLoadingFinished;
 
-        public WrapperBlobItem(IReadOnlyList<BlobItem> listBlobItems)
+        public WrapperBlobItem(IReadOnlyList<BlobItem> listBlobItems, bool isLoadingFinished)
         {
             _listBlobItems = listBlobItems;
+            _isLoadingFinished = isLoadingFinished;
         }
 
         public bool IsEmpty()
@@ -45,9 +47,9 @@ namespace AnonymBs.Engine
             return _listBlobItems.Select(x => x.Name).ToList();
         }
 
-        public bool IsFull(int maxParallelDownloads)
+        public bool IsLoadingFinished()
         {
-            return (_listBlobItems.Count == maxParallelDownloads);
+            return _isLoadingFinished;
         }
     }
 }
