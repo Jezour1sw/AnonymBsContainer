@@ -65,7 +65,7 @@ jobs:
         shell: pwsh
         run: 
           # PowerShell script
-          $SemVer = (dotnet-gitversion | ConvertFrom-Json).SemVer
+          $SemVer = (dotnet-gitversion | ConvertFrom-Json).SemVer;
           ./packpackage.ps1 -Version $SemVer
 
 #      - name: Save Package
