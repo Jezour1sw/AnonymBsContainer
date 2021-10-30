@@ -79,7 +79,7 @@ jobs:
       - run: echo ${{github.ref}}
 
       - name: Publish Package
-        if: startsWith(github.ref, 'refs/remotes/origin/main')
+        if: github.ref == 'refs/heads/main'
         shell: pwsh
         run:
           dotnet nuget push "/out/out/nuget/*.nupkg"
