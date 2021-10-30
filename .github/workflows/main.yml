@@ -23,6 +23,10 @@ jobs:
       - name: Check Out Code
         uses: actions/checkout@v2
         #url: https://github.com/actions/checkout
+
+      - name: Fetch all history for all tags and branches
+        run: git fetch --prune --unshallow
+
         
       - name: Configure .NET Core 3.1
         uses: actions/setup-dotnet@v1
@@ -36,7 +40,6 @@ jobs:
 #        with:
 #          dotnet-version: 4.6.x
 
-
       # Runs a single command using the runners shell
       - name: Rebuild the powershell module
         shell: pwsh
@@ -44,11 +47,26 @@ jobs:
           # PowerShell script 
           ./build.ps1 -Configuration 'Release'
 
+#      - name: Fetch main for GitVersion
+#        if: github.ref != 'refs/heads/main'
+#        run: git branch --create-reflog main origin/main
+
+#      - name: GitVersion
+#        id: gitversion  # step id used as reference for output values
+#        uses: roryprimrose/rungitversion@v1.0.0
+
+      - name: Install gitversion as global tool
+        shell: pwsh
+        run: 
+          # PowerShell script
+          dotnet tool install --global GitVersion.Tool;
+
       - name: Pack package
         shell: pwsh
         run: 
-          # PowerShell script 
-          ./packpackage.ps1
+          # PowerShell script
+          $SemVer = (dotnet-gitversion | ConvertFrom-Json).SemVer;
+          ./packpackage.ps1 -Version $SemVer
 
 #      - name: Save Package
 #        uses: actions/upload-artifact@v2
@@ -59,7 +77,7 @@ jobs:
 #          if-no-files-found: error
 
       - name: Publish Package
-        if: startsWith(github.ref, 'refs/tags/release/')
+        if: startsWith(github.ref, 'refs/heads/main/')
         shell: pwsh
         run: >
           dotnet nuget push "/out/out/nuget/*.nupkg"
