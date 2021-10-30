@@ -27,16 +27,6 @@ jobs:
       - name: Fetch all history for all tags and branches
         run: git fetch --prune --unshallow
 
-      - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v0.9.2
-        with:
-          versionSpec: '5.2.x'
-
-      - name: Use GitVersion
-        id: gitversion # step id used as reference for output values
-        uses: gittools/actions/gitversion/execute@v0.9.2
-
-
         
       - name: Configure .NET Core 3.1
         uses: actions/setup-dotnet@v1
@@ -68,8 +58,9 @@ jobs:
       - name: Pack package
         shell: pwsh
         run: 
-          # PowerShell script 
-          ./packpackage.ps1 -Version ${{ steps.gitversion.outputs.SemVer }}
+          # PowerShell script
+          dotnet tool install --global GitVersion.Tool
+          ./packpackage.ps1 -Version (dotnet-gitversion | ConvertFrom-Json).SemVer
 
 #      - name: Save Package
 #        uses: actions/upload-artifact@v2
