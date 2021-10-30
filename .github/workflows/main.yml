@@ -55,12 +55,18 @@ jobs:
 #        id: gitversion  # step id used as reference for output values
 #        uses: roryprimrose/rungitversion@v1.0.0
 
+      - name: Install gitversion as global tool
+        shell: pwsh
+        run: 
+          # PowerShell script
+          dotnet tool install --global GitVersion.Tool;
+
       - name: Pack package
         shell: pwsh
         run: 
           # PowerShell script
-          dotnet tool install --global GitVersion.Tool
-          ./packpackage.ps1 -Version (dotnet-gitversion | ConvertFrom-Json).SemVer
+          $SemVer = (dotnet-gitversion | ConvertFrom-Json).SemVer
+          ./packpackage.ps1 -Version $SemVer
 
 #      - name: Save Package
 #        uses: actions/upload-artifact@v2
