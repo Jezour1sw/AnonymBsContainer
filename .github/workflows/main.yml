@@ -82,7 +82,8 @@ jobs:
         if: github.ref == 'refs/heads/main'
         shell: pwsh
         run:
-          dotnet nuget push "/out/nuget/*.nupkg"
+          $nupkg = Get-ChildItem -Path "./out/nuget/*.nupkg" | Select-Object -First 1;
+          dotnet nuget push $nupkg.FullName
           -s https://www.powershellgallery.com/
           -k $env:PSGALLERY_API_KEY
           --skip-duplicate
