@@ -146,21 +146,27 @@ namespace AnonymBs.Engine
 
             var resultSegment = _sourceBlobContainerClient.GetBlobsAsync().AsPages(_blobContinuationToken, pageSizeHint: _maxParallelConvert);
 
-            return new WrapperBlobItem(Task.Run(() => GetBlobItemBatchAsync(resultSegment)).Result);
+            return Task.Run(() => GetBlobItemBatchAsync(resultSegment)).Result;
         }
 
-        private async Task<IReadOnlyList<BlobItem>> GetBlobItemBatchAsync(IAsyncEnumerable<Page<BlobItem>> onePage)
+        private async Task<WrapperBlobItem> GetBlobItemBatchAsync(IAsyncEnumerable<Page<BlobItem>> onePage)
         {
             List<BlobItem> blobItems = new List<BlobItem>();
+            bool isLoadingFinished = true;
             await foreach (Azure.Page<BlobItem> oneBlobItemBatch in onePage)
             {
 
                 blobItems.AddRange(oneBlobItemBatch.Values);
                 _blobContinuationToken = oneBlobItemBatch.ContinuationToken;
-                    
+                if (string.IsNullOrEmpty(_blobContinuationToken))
+                    isLoadingFinished = true;
+                else
+                    isLoadingFinished = false;
+
+
                 break;
             }
-            return blobItems;
+            return new WrapperBlobItem(blobItems, isLoadingFinished: isLoadingFinished);
         }
 
         private Task ConvertOneBlob(BlobClient blobClient, Uri anonymizedBlobUri)
