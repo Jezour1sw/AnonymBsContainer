@@ -23,6 +23,20 @@ jobs:
       - name: Check Out Code
         uses: actions/checkout@v2
         #url: https://github.com/actions/checkout
+
+      - name: Fetch all history for all tags and branches
+        run: git fetch --prune --unshallow
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0.9.2
+        with:
+          versionSpec: '5.2.x'
+
+      - name: Use GitVersion
+        id: gitversion # step id used as reference for output values
+        uses: gittools/actions/gitversion/execute@v0.9.2
+
+
         
       - name: Configure .NET Core 3.1
         uses: actions/setup-dotnet@v1
@@ -66,7 +80,7 @@ jobs:
 #          if-no-files-found: error
 
       - name: Publish Package
-        if: startsWith(github.ref, 'refs/main/')
+        if: startsWith(github.ref, 'refs/heads/main/')
         shell: pwsh
         run: >
           dotnet nuget push "/out/out/nuget/*.nupkg"
