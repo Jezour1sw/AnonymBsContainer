@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 Petr Jezek, 1.SOFTWAROV¡ s.r.o.
+    Copyright 2021 Petr Jezek, 1.SOFTWAROV√Å s.r.o.
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -95,17 +95,17 @@ namespace AnonymBs.Cmdlets
         [Parameter(
             Position = 8,
             Mandatory = false,
-            HelpMessage = "When is reuired to get info about each anonymized file. Default is false. "
+            HelpMessage = "When is reuired to get info about each anonymized file via debug messages. Default is false. "
         )]
         public bool ShowEachFileName = false;
 
 
         protected override void BeginProcessing()
         {
-            
+
             WriteDebug("start watch");
             _swTotal.Start();
-            
+
             _copyAnonymBsContainer = new ConvertAnonymBsContainer(
                 SourceConnectionString,
                 SourceContainerName,
@@ -143,9 +143,9 @@ namespace AnonymBs.Cmdlets
 
         }
 
-        
+
         protected override void ProcessRecord()
-        { 
+        {
 
             long totalProcessedItemCounter = 0;
 
@@ -212,11 +212,11 @@ namespace AnonymBs.Cmdlets
 
             WriteProgress(_progressRecord);
 
-            WriteVerbose(String.Format("Total: [{0}, Elapsed={1}, Files per Seconds:{2}]", 
+            WriteVerbose(String.Format("Total: [{0}, Elapsed={1}, Files per Seconds:{2}]",
                 totalProcessedItemCounter, _swTotal.Elapsed, (totalProcessedItemCounter / _swTotal.Elapsed.TotalSeconds)));
 
         }
-        
+
 
         protected override void EndProcessing()
         {
