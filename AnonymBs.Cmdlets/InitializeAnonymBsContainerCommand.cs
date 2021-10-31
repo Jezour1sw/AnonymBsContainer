@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 Petr Jezek, 1.SOFTWAROVA s.r.o.
+    Copyright 2021 Petr Jezek, 1.SOFTWAROVÁ s.r.o.
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -48,6 +48,13 @@ namespace AnonymBs.Cmdlets
         )]
         public string InitializeDirPath { get; set; }
 
+        [Parameter(
+            Position = 3,
+            Mandatory = false,
+            HelpMessage = "override when already exists blob with the same name."
+        )]
+        public bool OverwriteBlobIfAlreadyExists { get; set; } = true;
+
 
         protected override void BeginProcessing()
         {
@@ -64,7 +71,12 @@ namespace AnonymBs.Cmdlets
             }
             WriteVerbose($"path to folder on local for upload anonymized documents: [{InitializeDirPath}]");
             WriteVerbose($"Container name: [{ContainerName}]");
-            _initializeAnonymBsContainer = new InitializeAnonymBsContainer(ConnectionString, ContainerName, InitializeDirPath);
+            _initializeAnonymBsContainer = new InitializeAnonymBsContainer(
+                ConnectionString,
+                ContainerName,
+                InitializeDirPath,
+                OverwriteBlobIfAlreadyExists
+            );
             WriteVerbose($"Account name: [{_initializeAnonymBsContainer.GetAccountName()}]");
         }
 
