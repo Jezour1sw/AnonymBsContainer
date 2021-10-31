@@ -56,7 +56,7 @@
     PrivateData            = @{
 
         PSData = @{
-            ProjectURI = 'https://github.com/Jezour/AnonymBsContainer/'
+            ProjectURI = 'https://github.com/Jezour1sw/AnonymBsContainer#readme'
         } # End of PSData hashtable
 
     } # End of PrivateData hashtable

@@ -39,7 +39,7 @@ This command is just loading anonymization templates from the local folder to th
 
 ``` pwsh
 Initialize-AnonymBsContainer `
--ConnectionString 'DefaultEndpointsProtocol=https;AccountName=MyTarget;AccountKey=Target;EndpointSuffix=core.windows.net' `
+-ConnectionString 'DefaultEndpointsProtocol=https;AccountName=MyTarget;AccountKey=xxx;EndpointSuffix=core.windows.net' `
 -ContainerName 'anonymized-documents' `
 -Verbose
 ```
@@ -52,7 +52,7 @@ Just please keep in mind that only one file is expected for each suffix.
 
 ``` pwsh
 Initialize-AnonymBsContainer `
--ConnectionString 'DefaultEndpointsProtocol=https;AccountName=MyTarget;AccountKey=Target;EndpointSuffix=core.windows.net' `
+-ConnectionString 'DefaultEndpointsProtocol=https;AccountName=MyTarget;AccountKey=xxx;EndpointSuffix=core.windows.net' `
 -ContainerName 'anonymized-documents' `
 -InitializeDirPath c:\temp\my-anonymization-templates-documents
 -Verbose
