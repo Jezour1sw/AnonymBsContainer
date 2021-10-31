@@ -27,15 +27,18 @@ namespace AnonymBs.Engine
         private readonly BlobContainerClient _blobContainerClient;
         private readonly DirectoryInfo _directoryInitializeDirPath;
         private readonly int maxParallelUpload = 512;
+        private readonly bool _overwrite = true;
 
         public InitializeAnonymBsContainer(
             string connectionString, 
             string containerName,
-            string initializeDirPath
+            string initializeDirPath,
+            bool overwrite
         )
         {
             _blobContainerClient = new BlobContainerClient(connectionString: connectionString, blobContainerName: containerName);
              _directoryInitializeDirPath = new DirectoryInfo(initializeDirPath);
+            _overwrite = overwrite;
         }
 
         public string GetAccountName()
@@ -77,7 +80,7 @@ namespace AnonymBs.Engine
 
         private Task UploadOneFile(BlobClient blob, string fileName)
         {
-            return blob.UploadAsync(fileName);
+            return blob.UploadAsync(fileName, overwrite: _overwrite);
         }
     }
 }
