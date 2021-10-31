@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 Petr Jezek, 1.SOFTWAROVÁ s.r.o.
+    Copyright 2021 Petr Jezek, 1.SOFTWAROVA s.r.o.
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -46,16 +46,15 @@ namespace AnonymBs.Cmdlets
             Mandatory = false,
             HelpMessage = "The path on local disk where is files e.g. a.jpg, a.jpeg, a.gif, a.docx, .. temaplates for anonymization blobs base on the suffix. When is the parameter the InitializeDirPath empty. There's few default files for anonymation is part of the module."
         )]
-        [Parameter(Mandatory = false)]
         public string InitializeDirPath { get; set; }
 
 
         protected override void BeginProcessing()
         {
-            if(string.IsNullOrEmpty(InitializeDirPath))
+            if (string.IsNullOrEmpty(InitializeDirPath))
             {
                 InitializeDirPath = Path.Combine(MyInvocation.MyCommand.Module.ModuleBase, "default-anonymized-documents");
-                
+
             }
             if (!Directory.Exists(InitializeDirPath))
             {
@@ -80,7 +79,7 @@ namespace AnonymBs.Cmdlets
 
         protected override void EndProcessing()
         {
-            
+
 
         }
     }
