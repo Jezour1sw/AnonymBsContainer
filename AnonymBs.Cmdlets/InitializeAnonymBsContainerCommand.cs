@@ -51,10 +51,9 @@ namespace AnonymBs.Cmdlets
         [Parameter(
             Position = 3,
             Mandatory = false,
-            HelpMessage = "override when already exists blob with the same name."
+            HelpMessage = "Override when already exists blob with the same name."
         )]
         public bool OverwriteBlobIfAlreadyExists { get; set; } = true;
-
 
         protected override void BeginProcessing()
         {
