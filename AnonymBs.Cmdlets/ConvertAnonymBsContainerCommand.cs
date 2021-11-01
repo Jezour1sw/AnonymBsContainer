@@ -158,54 +158,58 @@ namespace AnonymBs.Cmdlets
             swCounterOfItems.Stop();
             WriteVerbose($"Items to process: {totalItemCounter} [Counting time of items to process: {swCounterOfItems.Elapsed}]");
 
-            bool isLoadingFinished;
-            do
+            if (totalItemCounter > 0)
             {
-                WrapperBlobItem wrapperBlobItem = _copyAnonymBsContainer.LoadNextBatchForProcessing();
 
-                if (ShowEachFileName)
+                bool isLoadingFinished;
+                do
                 {
-                    foreach (var oneBlobName in wrapperBlobItem.GetNames())
+                    WrapperBlobItem wrapperBlobItem = _copyAnonymBsContainer.LoadNextBatchForProcessing();
+
+                    if (ShowEachFileName)
                     {
-                        WriteDebug(oneBlobName);
+                        foreach (var oneBlobName in wrapperBlobItem.GetNames())
+                        {
+                            WriteDebug(oneBlobName);
+                        }
                     }
+
+
+                    Stopwatch swIncrement = new Stopwatch();
+                    swIncrement.Start();
+
+                    _copyAnonymBsContainer.ProcessBatch(wrapperBlobItem);
+
+                    swIncrement.Stop();
+                    var incrementItemCounter = wrapperBlobItem.Count();
+                    totalProcessedItemCounter += incrementItemCounter;
+                    int percentageComplete = (int)((totalProcessedItemCounter * 100) / totalItemCounter);
+
+                    WriteVerbose(string.Format("Progress: [Increment items {0}, Elapsed={1}, Files per Seconds:{2}], [Total items {3}, Elapsed:{4}, Files per Seconds:{5}] {6}% [{7}/{8}]",
+                        incrementItemCounter, swIncrement.Elapsed, (incrementItemCounter / swIncrement.Elapsed.TotalSeconds),
+                        totalProcessedItemCounter, _swTotal.Elapsed, (totalProcessedItemCounter / _swTotal.Elapsed.TotalSeconds),
+                        percentageComplete, totalProcessedItemCounter, totalItemCounter
+                        ));
+
+
+                    if (percentageComplete >= 100)
+                    {
+                        _progressRecord.PercentComplete = 100;
+                        _progressRecord.RecordType = ProgressRecordType.Completed;
+                    }
+                    else
+                    {
+                        _progressRecord.PercentComplete = percentageComplete;
+                    }
+
+
+                    WriteProgress(_progressRecord);
+
+                    isLoadingFinished = wrapperBlobItem.IsLoadingFinished();
+
                 }
-
-
-                Stopwatch swIncrement = new Stopwatch();
-                swIncrement.Start();
-
-                _copyAnonymBsContainer.ProcessBatch(wrapperBlobItem);
-
-                swIncrement.Stop();
-                var incrementItemCounter = wrapperBlobItem.Count();
-                totalProcessedItemCounter += incrementItemCounter;
-                int percentageComplete = (int)((totalProcessedItemCounter * 100) / totalItemCounter);
-
-                WriteVerbose(string.Format("Progress: [Increment items {0}, Elapsed={1}, Files per Seconds:{2}], [Total items {3}, Elapsed:{4}, Files per Seconds:{5}] {6}% [{7}/{8}]",
-                    incrementItemCounter, swIncrement.Elapsed, (incrementItemCounter / swIncrement.Elapsed.TotalSeconds),
-                    totalProcessedItemCounter, _swTotal.Elapsed, (totalProcessedItemCounter / _swTotal.Elapsed.TotalSeconds),
-                    percentageComplete, totalProcessedItemCounter, totalItemCounter
-                    ));
-
-
-                if (percentageComplete >= 100)
-                {
-                    _progressRecord.PercentComplete = 100;
-                    _progressRecord.RecordType = ProgressRecordType.Completed;
-                }
-                else
-                {
-                    _progressRecord.PercentComplete = percentageComplete;
-                }
-
-
-                WriteProgress(_progressRecord);
-
-                isLoadingFinished = wrapperBlobItem.IsLoadingFinished();
-
+                while (!isLoadingFinished);
             }
-            while (!isLoadingFinished);
 
             _progressRecord.PercentComplete = 100;
             _progressRecord.RecordType = ProgressRecordType.Completed;
