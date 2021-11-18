@@ -42,7 +42,14 @@ $moduleTagIncludesFunction = 'PSIncludes_Function'
 $moduleTagFunction = 'PSFunction'
 $moduleTagCommand = 'PSCommand'
 
+$RootModule = 'RootModule = if ($PSEdition -eq ''Core'') { ''Core/AnonymBs.Cmdlets.dll''} else {''Framework/AnonymBs.Cmdlets.dll''}'
+
 Update-ModuleManifest -Path $moduleManifestFile -ModuleVersion $moduleVersion
+
+#Update-ModuleManifest is not able to modify the $RootModule properly
+$regex = 'RootModule = ''Core/AnonymBs.Cmdlets.dll'''
+(Get-Content $moduleManifestFile) -replace $regex, $RootModule | Set-Content $moduleManifestFile
+
 $moduleManifest = Test-ModuleManifest -Path $moduleManifestFile
 $moduleDescription = $moduleManifest.Description
 $moduleAuthor = $moduleManifest.Author
