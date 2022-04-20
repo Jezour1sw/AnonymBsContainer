@@ -27,13 +27,6 @@ jobs:
       - name: Fetch all history for all tags and branches
         run: git fetch --prune --unshallow
 
-        
-      - name: Configure .NET Core 3.1
-        uses: actions/setup-dotnet@v1
-        #url: https://github.com/actions/setup-dotnet
-        with:
-          dotnet-version: 3.1.x
-          
       - name: Install component on windows 2022
         shell: pwsh
         run: |
@@ -55,6 +48,17 @@ jobs:
               Write-Host "components were not installed"
               exit 1
           }
+        
+      - name: Configure .NET Core 3.1 and 4.6.1
+        uses: actions/setup-dotnet@v2
+        #url: https://github.com/actions/setup-dotnet
+        with:
+          #dotnet-version: 3.1.x
+          dotnet-version: | 
+            3.1.x
+            4.6.1
+          
+
 
 #      - name: Configure .NET 4.6.1
 #        uses: actions/setup-dotnet@v1
