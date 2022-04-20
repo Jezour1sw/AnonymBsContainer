@@ -33,6 +33,20 @@ namespace AnonymBs.Cmdlets
         [ValidateNotNullOrEmpty]
         public string ContainerName { get; set; }
 
+        [Parameter(
+         Mandatory = false,
+         HelpMessage = "The number of concurrent threas to copy files (Range 1.. 5000). Default is 512."
+     )]
+        [ValidateRange(1, 5000)]
+        public int MaxParallelDownloads = 512;
+
+
+        [Parameter(
+            Mandatory = false,
+            HelpMessage = "When is reuired to get info about each anonymized file via debug messages. Default is false. "
+        )]
+        public bool ShowEachFileName = false;
+
 
         protected override void BeginProcessing()
         {
@@ -41,7 +55,7 @@ namespace AnonymBs.Cmdlets
 
         protected override void ProcessRecord()
         {
-            foreach (var blobName in _clearAnonymBsContainer.Clear())
+            foreach (var blobName in _clearAnonymBsContainer.Clear(MaxParallelDownloads, ShowEachFileName))
             {
                 WriteVerbose(blobName);
             }

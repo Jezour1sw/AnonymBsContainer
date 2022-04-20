@@ -15,6 +15,7 @@
 */
 
 using Azure.Storage.Blobs;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -29,22 +30,28 @@ namespace AnonymBs.Engine
             _blobContainerClient = new BlobContainerClient(connectionString: connectionString, blobContainerName: containerName);
         }
 
-        public HashSet<string> Clear()
+        public HashSet<string> Clear(int maxParallelDownloads, bool showEachFileName)
         {
-            return Task.Run(() => ClearAsync()).Result;
+            return Task.Run(() => ClearAsync(maxParallelDownloads, showEachFileName)).Result;
         }
 
-        public async Task<HashSet<string>> ClearAsync()
+        public async Task<HashSet<string>> ClearAsync(int maxParallelDownloads, bool showEachFileName)
         {
 
             HashSet<string> toReturn = new HashSet<string>();
-            await foreach (var oneBlob in _blobContainerClient.GetBlobsAsync())
+            await foreach (var oneBlobPage in _blobContainerClient.GetBlobsAsync().AsPages(pageSizeHint: maxParallelDownloads))
             {
-                _ = _blobContainerClient.DeleteBlobIfExistsAsync(oneBlob.Name);
-                toReturn.Add(oneBlob.Name);
+                foreach(var oneBlob in oneBlobPage.Values)
+                {
+                    _ = _blobContainerClient.DeleteBlobIfExistsAsync(oneBlob.Name);
+                    if (showEachFileName)
+                        toReturn.Add(oneBlob.Name);
+                }
+
             }
             return toReturn;
             
         }
+
     }
 }
