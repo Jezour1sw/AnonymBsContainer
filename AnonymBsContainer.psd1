@@ -1,12 +1,7 @@
 @{
 
     # Script module or binary module file associated with this manifest.
-    RootModule             = if ($PSEdition -eq 'Core') {
-        'Core/AnonymBs.Cmdlets.dll'
-    }
-    else {
-        'Framework/AnonymBs.Cmdlets.dll'
-    }
+    RootModule             = if ($PSEdition -eq 'Core') { 'Core/AnonymBs.Cmdlets.dll' } else { 'Framework/AnonymBs.Cmdlets.dll' }
 
     # Version number of this module.
     ModuleVersion          = '1.0.0'
