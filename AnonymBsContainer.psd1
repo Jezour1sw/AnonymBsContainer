@@ -28,7 +28,7 @@
     PowerShellVersion      = '5.1'
 
     # Minimum version of Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
-    DotNetFrameworkVersion = '4.6.1'
+    DotNetFrameworkVersion = '4.8.0'
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
     FunctionsToExport      = @()

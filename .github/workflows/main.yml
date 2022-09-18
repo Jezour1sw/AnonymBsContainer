@@ -39,8 +39,11 @@ jobs:
         run: |
           Set-Location "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
           $InstallPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
+          #$componentsToAdd = @(
+          #  "Microsoft.Net.Component.4.6.1.SDK"
+          #)
           $componentsToAdd = @(
-            "Microsoft.Net.Component.4.6.1.SDK"
+            "Microsoft.Net.Component.4.8.0.SDK"
           )
           [string]$workloadArgs = $componentsToAdd | ForEach-Object {" --add " +  $_}
           $Arguments = ('/c', "vs_installer.exe", 'modify', '--installPath', "`"$InstallPath`"",$workloadArgs, '--quiet', '--norestart', '--nocache')
@@ -55,11 +58,11 @@ jobs:
               exit 1
           }
 
-#      - name: Configure .NET 4.6.1
+#      - name: Configure .NET 4.8.0
 #        uses: actions/setup-dotnet@v1
 #        #url: https://github.com/actions/setup-dotnet
 #        with:
-#          dotnet-version: 4.6.x
+#          dotnet-version: 4.8.x
 
       # Runs a single command using the runners shell
       - name: Rebuild the powershell module
