@@ -21,7 +21,7 @@ param(
 )
 
 $netCore = 'netcoreapp3.1'
-$netFramework = 'net461'
+$netFramework = 'net48'
 $moduleName = 'AnonymBs'
 $moduleNameFull = 'AnonymBsContainer'
 
