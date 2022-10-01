@@ -102,6 +102,7 @@ namespace AnonymBs.Engine
             return _isLoadedDefaultSuffix;
         }
 
+        /*
         public long TotalCounter()
         {
             return Task.Run(() => TotalCounterAsync()).Result;
@@ -118,6 +119,7 @@ namespace AnonymBs.Engine
             }
             return toReturn;
         }
+        */
 
         public void ProcessBatch(WrapperBlobItem wrapperBlobItem)
         {

@@ -153,7 +153,17 @@ namespace AnonymBs.Cmdlets
             swCounterOfItems.Start();
             WriteVerbose("Computing number of items to process...");
 
-            long totalItemCounter = _copyAnonymBsContainer.TotalCounter();
+            bool isLoadingFinished;
+            long totalItemCounter = 0;
+            do
+            {
+                WrapperBlobItem wrapperBlobItem = _copyAnonymBsContainer.LoadNextBatchForProcessing();
+                totalItemCounter += wrapperBlobItem.Count();
+                isLoadingFinished = wrapperBlobItem.IsLoadingFinished();
+
+            }
+            while (!isLoadingFinished);
+
 
             swCounterOfItems.Stop();
             WriteVerbose($"Items to process: {totalItemCounter} [Counting time of items to process: {swCounterOfItems.Elapsed}]");
@@ -161,7 +171,6 @@ namespace AnonymBs.Cmdlets
             if (totalItemCounter > 0)
             {
 
-                bool isLoadingFinished;
                 do
                 {
                     WrapperBlobItem wrapperBlobItem = _copyAnonymBsContainer.LoadNextBatchForProcessing();
