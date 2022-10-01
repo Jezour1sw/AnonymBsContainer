@@ -159,6 +159,7 @@ namespace AnonymBs.Cmdlets
             {
                 WrapperBlobItem wrapperBlobItem = _copyAnonymBsContainer.LoadNextBatchForProcessing();
                 totalItemCounter += wrapperBlobItem.Count();
+                WriteVerbose($"Curretly found: {totalItemCounter} items. [Counting time of items to process: {swCounterOfItems.Elapsed}]");
                 isLoadingFinished = wrapperBlobItem.IsLoadingFinished();
 
             }
