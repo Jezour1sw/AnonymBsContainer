@@ -102,25 +102,6 @@ namespace AnonymBs.Engine
             return _isLoadedDefaultSuffix;
         }
 
-        /*
-        public long TotalCounter()
-        {
-            return Task.Run(() => TotalCounterAsync()).Result;
-        }
-
-        public async Task<long> TotalCounterAsync()
-        {
-            long toReturn = 0;
-            string continuationCounterToken = string.Empty;
-            await foreach (var oneBlobPage in _sourceBlobContainerClient.GetBlobsAsync().AsPages(continuationToken: continuationCounterToken, pageSizeHint: _maxParallelConvert))
-            {
-                continuationCounterToken = oneBlobPage.ContinuationToken;
-                toReturn += oneBlobPage.Values.Count;
-            }
-            return toReturn;
-        }
-        */
-
         public void ProcessBatch(WrapperBlobItem wrapperBlobItem)
         {
             var options = new ParallelOptions()
@@ -145,7 +126,6 @@ namespace AnonymBs.Engine
 
         public WrapperBlobItem LoadNextBatchForProcessing()
         {
-
             var resultSegment = _sourceBlobContainerClient.GetBlobsAsync().AsPages(_blobContinuationToken, pageSizeHint: _maxParallelConvert);
 
             return Task.Run(() => GetBlobItemBatchAsync(resultSegment)).Result;
