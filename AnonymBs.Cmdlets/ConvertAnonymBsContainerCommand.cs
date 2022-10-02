@@ -159,13 +159,14 @@ namespace AnonymBs.Cmdlets
             long totalProcessedItemCounter = 0;
 
             Stopwatch swCounterOfItems = new Stopwatch();
-            swCounterOfItems.Start();
-            WriteVerbose("Computing number of items to process...");
+
 
             bool isLoadingFinished;
             long totalItemCounter = 0;
             if(!SkipPreCountingBlobs)
             {
+                swCounterOfItems.Start();
+                WriteVerbose("Computing number of items to process...");
                 do
                 {
                     WrapperBlobItem wrapperBlobItem = _copyAnonymBsContainer.LoadNextBatchForProcessing();
@@ -175,12 +176,14 @@ namespace AnonymBs.Cmdlets
 
                 }
                 while (!isLoadingFinished);
+
+                swCounterOfItems.Stop();
+                WriteVerbose($"Items to process: {totalItemCounter} [Counting time of items to process: {swCounterOfItems.Elapsed}]");
             }
 
 
 
-            swCounterOfItems.Stop();
-            WriteVerbose($"Items to process: {totalItemCounter} [Counting time of items to process: {swCounterOfItems.Elapsed}]");
+
 
             if (totalItemCounter > 0 || SkipPreCountingBlobs)
             {
