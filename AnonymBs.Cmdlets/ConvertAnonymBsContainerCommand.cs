@@ -82,7 +82,7 @@ namespace AnonymBs.Cmdlets
             Mandatory = false,
             HelpMessage = "The number of concurrent threas to copy files (Range 1.. 5000). Default is 512."
         )]
-        [ValidateRange(1, 5000)]
+        [ValidateRange(1, 10000)]
         public int MaxParallelDownloads = 800;
 
         [Parameter(
@@ -209,7 +209,7 @@ namespace AnonymBs.Cmdlets
 
                     if(SkipPreCountingBlobs)
                     {
-                        WriteVerbose($"Progress: [Increment items {incrementItemCounter}, Elapsed={swIncrement.Elapsed}, Files per Seconds:{(incrementItemCounter / swIncrement.Elapsed.TotalSeconds)}], [Elapsed:{swIncrement.Elapsed}, Files per Seconds:{(totalProcessedItemCounter / _swTotal.Elapsed.TotalSeconds)}] ");
+                        WriteVerbose($"Progress: [Increment items {incrementItemCounter}, Elapsed={swIncrement.Elapsed}, Files per Seconds:{(incrementItemCounter / swIncrement.Elapsed.TotalSeconds)}], [Total items {totalProcessedItemCounter}, Elapsed:{_swTotal.Elapsed}, Files per Seconds:{(totalProcessedItemCounter / _swTotal.Elapsed.TotalSeconds)}] ");
                     } 
                     else
                     {
