@@ -83,7 +83,7 @@ namespace AnonymBs.Cmdlets
             HelpMessage = "The number of concurrent threas to copy files (Range 1.. 5000). Default is 512."
         )]
         [ValidateRange(1, 5000)]
-        public int MaxParallelDownloads = 100;
+        public int MaxParallelDownloads = 800;
 
         [Parameter(
             Position = 7,
@@ -95,9 +95,16 @@ namespace AnonymBs.Cmdlets
         [Parameter(
             Position = 8,
             Mandatory = false,
-            HelpMessage = "When is reuired to get info about each anonymized file via debug messages. Default is false. "
+            HelpMessage = "When is required to get info about each anonymized file via debug messages. Default is false. "
         )]
         public bool ShowEachFileName = false;
+
+        [Parameter(
+            Position = 9,
+            Mandatory = false,
+            HelpMessage = "When is set the progress will not display percentage due to missing count, but processing is quicker. "
+        )]
+        public bool SkipPreCountingBlobs = false;
 
 
         protected override void BeginProcessing()
@@ -127,6 +134,8 @@ namespace AnonymBs.Cmdlets
             WriteVerbose($"MaxParallelDownloads: [{MaxParallelDownloads}]");
             WriteVerbose($"SkipIfFileAlreadyExists: [{SkipIfFileAlreadyExists}]");
             WriteVerbose($"ShowEachFileName: [{ShowEachFileName}]");
+            WriteVerbose($"SkipPreCountingBlobs: [{SkipPreCountingBlobs}]");
+            
 
             if (!_copyAnonymBsContainer.IsLoadedDefaultSuffix())
             {
@@ -155,21 +164,25 @@ namespace AnonymBs.Cmdlets
 
             bool isLoadingFinished;
             long totalItemCounter = 0;
-            do
+            if(!SkipPreCountingBlobs)
             {
-                WrapperBlobItem wrapperBlobItem = _copyAnonymBsContainer.LoadNextBatchForProcessing();
-                totalItemCounter += wrapperBlobItem.Count();
-                WriteVerbose($"Curretly found: {totalItemCounter} items. [Counting time of items to process: {swCounterOfItems.Elapsed}]");
-                isLoadingFinished = wrapperBlobItem.IsLoadingFinished();
+                do
+                {
+                    WrapperBlobItem wrapperBlobItem = _copyAnonymBsContainer.LoadNextBatchForProcessing();
+                    totalItemCounter += wrapperBlobItem.Count();
+                    WriteVerbose($"Curretly found: {totalItemCounter} items. [Counting time of items to process: {swCounterOfItems.Elapsed}]");
+                    isLoadingFinished = wrapperBlobItem.IsLoadingFinished();
 
+                }
+                while (!isLoadingFinished);
             }
-            while (!isLoadingFinished);
+
 
 
             swCounterOfItems.Stop();
             WriteVerbose($"Items to process: {totalItemCounter} [Counting time of items to process: {swCounterOfItems.Elapsed}]");
 
-            if (totalItemCounter > 0)
+            if (totalItemCounter > 0 || SkipPreCountingBlobs)
             {
 
                 do
@@ -193,23 +206,28 @@ namespace AnonymBs.Cmdlets
                     swIncrement.Stop();
                     var incrementItemCounter = wrapperBlobItem.Count();
                     totalProcessedItemCounter += incrementItemCounter;
-                    int percentageComplete = (int)((totalProcessedItemCounter * 100) / totalItemCounter);
 
-                    WriteVerbose(string.Format("Progress: [Increment items {0}, Elapsed={1}, Files per Seconds:{2}], [Total items {3}, Elapsed:{4}, Files per Seconds:{5}] {6}% [{7}/{8}]",
-                        incrementItemCounter, swIncrement.Elapsed, (incrementItemCounter / swIncrement.Elapsed.TotalSeconds),
-                        totalProcessedItemCounter, _swTotal.Elapsed, (totalProcessedItemCounter / _swTotal.Elapsed.TotalSeconds),
-                        percentageComplete, totalProcessedItemCounter, totalItemCounter
-                        ));
-
-
-                    if (percentageComplete >= 100)
+                    if(SkipPreCountingBlobs)
                     {
-                        _progressRecord.PercentComplete = 100;
-                        _progressRecord.RecordType = ProgressRecordType.Completed;
-                    }
+                        WriteVerbose($"Progress: [Increment items {incrementItemCounter}, Elapsed={swIncrement.Elapsed}, Files per Seconds:{(incrementItemCounter / swIncrement.Elapsed.TotalSeconds)}], [Elapsed:{swIncrement.Elapsed}, Files per Seconds:{(totalProcessedItemCounter / _swTotal.Elapsed.TotalSeconds)}] ");
+                    } 
                     else
                     {
-                        _progressRecord.PercentComplete = percentageComplete;
+                        int percentageComplete = (int)((totalProcessedItemCounter * 100) / totalItemCounter);
+
+                        WriteVerbose($"Progress: [Increment items {incrementItemCounter}, Elapsed={swIncrement.Elapsed}, Files per Seconds:{(incrementItemCounter / swIncrement.Elapsed.TotalSeconds)}], [Total items {totalProcessedItemCounter}, Elapsed:{_swTotal.Elapsed}, Files per Seconds:{(totalProcessedItemCounter / _swTotal.Elapsed.TotalSeconds)}] {percentageComplete}% [{totalProcessedItemCounter}/{totalItemCounter}]");
+
+
+                        if (percentageComplete >= 100)
+                        {
+                            _progressRecord.PercentComplete = 100;
+                            _progressRecord.RecordType = ProgressRecordType.Completed;
+                        }
+                        else
+                        {
+                            _progressRecord.PercentComplete = percentageComplete;
+                        }
+
                     }
 
 
@@ -226,8 +244,7 @@ namespace AnonymBs.Cmdlets
 
             WriteProgress(_progressRecord);
 
-            WriteVerbose(String.Format("Total: [{0}, Elapsed={1}, Files per Seconds:{2}]",
-                totalProcessedItemCounter, _swTotal.Elapsed, (totalProcessedItemCounter / _swTotal.Elapsed.TotalSeconds)));
+            WriteVerbose($"Total: [{totalProcessedItemCounter}, Elapsed={_swTotal.Elapsed}, Files per Seconds:{(totalProcessedItemCounter / _swTotal.Elapsed.TotalSeconds)}]");
 
         }
 
@@ -236,12 +253,7 @@ namespace AnonymBs.Cmdlets
         {
             WriteDebug("stop watch");
             _swTotal.Stop();
-            WriteVerbose(String.Format("Time: [Elapsed Days:{0}, Hours:{1}, Minutes: {2}, Seconds: {3}, Milliseconds: {4}]",
-                _swTotal.Elapsed.TotalDays,
-                _swTotal.Elapsed.TotalHours,
-                _swTotal.Elapsed.TotalMinutes,
-                _swTotal.Elapsed.TotalSeconds,
-                _swTotal.Elapsed.TotalMilliseconds));
+            WriteVerbose($"Time: [Elapsed Days:{_swTotal.Elapsed.TotalDays}, Hours:{_swTotal.Elapsed.TotalHours}, Minutes: {_swTotal.Elapsed.TotalMinutes}, Seconds: {_swTotal.Elapsed.TotalSeconds}, Milliseconds: {_swTotal.Elapsed.TotalMilliseconds}]");
         }
     }
 }
