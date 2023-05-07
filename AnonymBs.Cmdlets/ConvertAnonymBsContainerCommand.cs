@@ -106,6 +106,20 @@ namespace AnonymBs.Cmdlets
         )]
         public bool SkipPreCountingBlobs = false;
 
+        [Parameter(
+            Position = 10,
+            Mandatory = false,
+            HelpMessage = "When is set the delay between retry is according this value. Default is 10 secounds. "
+        )]
+        public int RetryDelayInSeconds = 10;
+
+        [Parameter(
+            Position = 11,
+            Mandatory = false,
+            HelpMessage = "When is set the number of retry is according this value. Default is 1000."
+        )]
+        public int MaxNumberOfRetry = 1000;
+
 
         protected override void BeginProcessing()
         {
@@ -121,7 +135,9 @@ namespace AnonymBs.Cmdlets
                 TargetAnonymContainerName,
                 DefaultFileSuffix,
                 MaxParallelDownloads,
-                SkipIfFileAlreadyExists
+                SkipIfFileAlreadyExists,
+                RetryDelayInSeconds,
+                MaxNumberOfRetry
             );
             WriteVerbose($"Source account name: [{_copyAnonymBsContainer.GetSourceAccountName()}]");
             WriteVerbose($"Source container name: [{SourceContainerName}]");

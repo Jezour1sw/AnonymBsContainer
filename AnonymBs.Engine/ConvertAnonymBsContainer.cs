@@ -15,6 +15,7 @@
 */
 
 using Azure;
+using Azure.Core;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using System;
@@ -48,7 +49,9 @@ namespace AnonymBs.Engine
             string targetAnonymContainerName,  
             string defaultFileSuffix, 
             int maxParallelConvert = 512, 
-            bool skipIfFileAlreadyExists = true
+            bool skipIfFileAlreadyExists = true,
+            int retryDelayInSeconds = 10,
+            int maxNumberOfRetry = 1000
         )
         {
             _targetConnectionString = targetConnectionString;
@@ -58,10 +61,13 @@ namespace AnonymBs.Engine
             _maxParallelConvert = maxParallelConvert;
             _skipIfFileAlreadyExists = skipIfFileAlreadyExists;
 
+            BlobClientOptions options = new BlobClientOptions();
+            options.Retry.Delay = TimeSpan.FromSeconds(retryDelayInSeconds);
+            options.Retry.MaxRetries = maxNumberOfRetry;
 
-            _sourceBlobContainerClient = new BlobContainerClient(connectionString: sourceConnectionString, blobContainerName: sourceContainerName);
-            _targetBlobContainerClient = new BlobContainerClient(connectionString: _targetConnectionString, blobContainerName: _targetContainerName);
-            _targetAnonymBlobContainerClient = new BlobContainerClient(connectionString: _targetConnectionString, blobContainerName: _targetAnonymContainerName);
+            _sourceBlobContainerClient = new BlobContainerClient(connectionString: sourceConnectionString, blobContainerName: sourceContainerName, options: options);
+            _targetBlobContainerClient = new BlobContainerClient(connectionString: _targetConnectionString, blobContainerName: _targetContainerName, options: options);
+            _targetAnonymBlobContainerClient = new BlobContainerClient(connectionString: _targetConnectionString, blobContainerName: _targetAnonymContainerName, options: options);
 
             _isLoadedDefaultSuffix = Task.Run(() => InitLoadAnonymFilesDictionaryAsync()).Result;
         }
