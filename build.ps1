@@ -20,7 +20,7 @@ param(
     $Configuration = 'Debug'
 )
 
-$netCore = 'netcoreapp3.1'
+$netCore = 'net8.0'
 $netFramework = 'net48'
 $moduleName = 'AnonymBs'
 $moduleNameFull = 'AnonymBsContainer'

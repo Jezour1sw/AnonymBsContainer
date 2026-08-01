@@ -152,7 +152,7 @@ namespace AnonymBs.Cmdlets
             WriteVerbose($"SkipIfFileAlreadyExists: [{SkipIfFileAlreadyExists}]");
             WriteVerbose($"ShowEachFileName: [{ShowEachFileName}]");
             WriteVerbose($"SkipPreCountingBlobs: [{SkipPreCountingBlobs}]");
-            
+
 
             if (!_copyAnonymBsContainer.IsLoadedDefaultSuffix())
             {
@@ -180,7 +180,7 @@ namespace AnonymBs.Cmdlets
 
             bool isLoadingFinished;
             long totalItemCounter = 0;
-            if(!SkipPreCountingBlobs)
+            if (!SkipPreCountingBlobs)
             {
                 swCounterOfItems.Start();
                 WriteVerbose("Computing number of items to process...");
@@ -234,10 +234,10 @@ namespace AnonymBs.Cmdlets
                     var incrementItemCounter = wrapperBlobItem.Count();
                     totalProcessedItemCounter += incrementItemCounter;
 
-                    if(SkipPreCountingBlobs)
+                    if (SkipPreCountingBlobs)
                     {
                         WriteVerbose($"Progress: [Increment items {incrementItemCounter}, Elapsed={swIncrement.Elapsed}, Files per Seconds:{(incrementItemCounter / swIncrement.Elapsed.TotalSeconds)}], [Total items {totalProcessedItemCounter}, Elapsed:{_swTotal.Elapsed}, Files per Seconds:{(totalProcessedItemCounter / _swTotal.Elapsed.TotalSeconds)}] ");
-                    } 
+                    }
                     else
                     {
                         int percentageComplete = (int)((totalProcessedItemCounter * 100) / totalItemCounter);
