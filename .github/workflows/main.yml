@@ -43,19 +43,19 @@ jobs:
       # Runs a single command using the runners shell
       - name: Rebuild the powershell module
         shell: pwsh
-        run: 
-          # PowerShell script 
+        run: |
+          # PowerShell script
           ./build.ps1 -Configuration 'Release'
 
       - name: Install gitversion as global tool
         shell: pwsh
-        run: 
+        run: |
           # PowerShell script
           dotnet tool install --global GitVersion.Tool;
 
       - name: Save package
         shell: pwsh
-        run: 
+        run: |
           # PowerShell script
           $MajorMinorPatch = (dotnet-gitversion /showvariable MajorMinorPatch).Trim();
           if ([string]::IsNullOrWhiteSpace($MajorMinorPatch)) {
@@ -69,7 +69,7 @@ jobs:
       - name: Publish Package
         if: github.ref == 'refs/heads/main'
         shell: pwsh
-        run:
+        run: |
           $nupkg = Get-ChildItem -Path "./out/nuget/*.nupkg" | Select-Object -First 1;
           dotnet nuget push $nupkg.FullName
           -s https://www.powershellgallery.com/
