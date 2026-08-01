@@ -108,13 +108,13 @@ namespace AnonymBs.Engine
             return _isLoadedDefaultSuffix;
         }
 
-        public void ProcessBatch(WrapperBlobItem wrapperBlobItem)
+        public Task ProcessBatch(WrapperBlobItem wrapperBlobItem)
         {
             var options = new ParallelOptions()
             {
                 MaxDegreeOfParallelism = _maxParallelConvert
             };
-            var tasks = new BlockingCollection<Task>(_maxParallelConvert);
+            var tasks = new ConcurrentBag<Task>();
             Parallel.ForEach(wrapperBlobItem._listBlobItems, options, i =>
             {
                 Uri AnonymizedBlobUri = ComputeUriOfAnonymizedBlob(i.Name);
@@ -126,8 +126,7 @@ namespace AnonymBs.Engine
 
             });
 
-            Task allTasks = Task.WhenAll(tasks);
-            allTasks.Wait();
+            return Task.WhenAll(tasks);
         }
 
         public WrapperBlobItem LoadNextBatchForProcessing()
