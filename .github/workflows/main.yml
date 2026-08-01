@@ -57,7 +57,11 @@ jobs:
         shell: pwsh
         run: 
           # PowerShell script
-          $MajorMinorPatch = (dotnet-gitversion | ConvertFrom-Json).MajorMinorPatch;
+          $MajorMinorPatch = (dotnet-gitversion /showvariable MajorMinorPatch).Trim();
+          if ([string]::IsNullOrWhiteSpace($MajorMinorPatch)) {
+            throw 'GitVersion did not return MajorMinorPatch.'
+          }
+          Write-Host "Resolved version: $MajorMinorPatch"
           ./packpackage.ps1 -Version $MajorMinorPatch;
 
       - run: echo ${{github.ref}}
