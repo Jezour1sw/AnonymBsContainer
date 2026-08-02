@@ -19,12 +19,31 @@ param(
         Mandatory = $true,
         HelpMessage = "Version should be set"
     )]
+    [ValidatePattern('^\d+\.\d+\.\d+(\.\d+)?$')]
     [string]
     $Version
 )
 $moduleName = 'AnonymBsContainer'
-$nuget = 'nuget.exe'
-#$nuget = 'C:\Users\A\Downloads\nuget.exe'
+$nugetDownloadUrl = 'https://dist.nuget.org/win-x86-commandline/latest/nuget.exe'
+$toolsDir = "$PSScriptRoot/out/tools"
+$nuget = $null
+$nugetCommand = Get-Command nuget.exe -ErrorAction SilentlyContinue
+if ($nugetCommand) {
+    $nuget = $nugetCommand.Source
+}
+else {
+    if (!(Test-Path $toolsDir)) {
+        New-Item -Path $toolsDir -ItemType Directory | Out-Null
+    }
+
+    $nugetLocalPath = Join-Path $toolsDir 'nuget.exe'
+    if (!(Test-Path $nugetLocalPath)) {
+        Write-Host "nuget.exe was not found on PATH. Downloading it to [$nugetLocalPath]."
+        Invoke-WebRequest -Uri $nugetDownloadUrl -OutFile $nugetLocalPath
+    }
+
+    $nuget = $nugetLocalPath
+}
 $outPath = "$PSScriptRoot/out/$moduleName"
 $nugetDir = "$PSScriptRoot/out/nuget/"
 if (Test-Path $nugetDir) {
@@ -57,7 +76,7 @@ $moduleOwner = $moduleManifest.CompanyName
 $moduleCopyright = $moduleManifest.Copyright
 
 $moduleTagsList = New-Object System.Collections.ArrayList
-$moduleTagsList.Add($moduleTagModule)
+$null = $moduleTagsList.Add($moduleTagModule)
 
 if ($moduleManifest.ExportedFunctions -and $moduleManifest.ExportedFunctions.Count -gt 0) {
     $null = $moduleTagsList.Add($moduleTagIncludesFunction)
@@ -127,4 +146,4 @@ $xml.AppendChild($packageElement) | Out-Null
 $xml.save($nuspecFullName)
 
 #create package
-. $nuget pack $nuspecFullName -OutputDirectory $nugetDir -NoPackageAnalysis
+& $nuget pack $nuspecFullName -OutputDirectory $nugetDir -NoPackageAnalysis
