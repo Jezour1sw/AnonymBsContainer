@@ -2,12 +2,12 @@
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [
         "config:recommended",
-        ":dependencyDashboard",
         ":semanticCommits",
         ":rebaseStalePrs",
         ":automergeBranch",
         ":label(dependencies)"
     ],
+    "dependencyDashboard": false,
     "timezone": "Europe/Prague",
     "schedule": [
         "before 6am on monday"
@@ -46,14 +46,32 @@
             "groupName": "nuget"
         },
         {
-            "description": "Keep System.Management.Automation compatible with net8 target",
+            "description": "Keep System.Management.Automation pinned for AnonymBs.Cmdlets net8 compatibility",
             "matchManagers": [
                 "nuget"
+            ],
+            "matchFileNames": [
+                "AnonymBs.Cmdlets/AnonymBs.Cmdlets.csproj"
             ],
             "matchPackageNames": [
                 "System.Management.Automation"
             ],
-            "allowedVersions": "<7.5.0"
+            "allowedVersions": "<=7.4.6"
+        },
+        {
+            "description": "Do not propose major updates for selected GitHub Actions",
+            "matchManagers": [
+                "github-actions"
+            ],
+            "matchPackageNames": [
+                "actions/checkout",
+                "actions/setup-dotnet",
+                "renovatebot/github-action"
+            ],
+            "matchUpdateTypes": [
+                "major"
+            ],
+            "enabled": false
         }
     ]
 }
