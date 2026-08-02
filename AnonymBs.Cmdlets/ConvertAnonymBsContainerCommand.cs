@@ -16,6 +16,7 @@
 
 using AnonymBs.Engine;
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Management.Automation;
 using System.Threading;
@@ -30,6 +31,7 @@ namespace AnonymBs.Cmdlets
         private Stopwatch _swTotal = new Stopwatch();
         private ProgressRecord _progressRecord;
         private ConvertAnonymBsContainerProgress _lastProgressSnapshot = new ConvertAnonymBsContainerProgress();
+        private ConcurrentQueue<string> _blobNamesToEmit = new ConcurrentQueue<string>();
         private readonly object _progressSync = new object();
 
         [Parameter(
@@ -106,7 +108,7 @@ namespace AnonymBs.Cmdlets
         [Parameter(
             Position = 9,
             Mandatory = false,
-            HelpMessage = "When is set the progress will not display percentage due to missing count, but processing is quicker. "
+            HelpMessage = "When is set the pre-counting is skipped and percentage is estimated from discovered blobs, so processing is quicker. "
         )]
         public bool SkipPreCountingBlobs = false;
 
@@ -185,13 +187,17 @@ namespace AnonymBs.Cmdlets
         protected override void ProcessRecord()
         {
             TimeSpan heartbeatInterval = TimeSpan.FromSeconds(HeartbeatIntervalInSeconds);
-            string lastEmittedBlobName = string.Empty;
 
             var progressReporter = new Progress<ConvertAnonymBsContainerProgress>(snapshot =>
             {
                 lock (_progressSync)
                 {
                     _lastProgressSnapshot = snapshot;
+                }
+
+                if (ShowEachFileName && !string.IsNullOrWhiteSpace(snapshot.LastBlobName))
+                {
+                    _blobNamesToEmit.Enqueue(snapshot.LastBlobName);
                 }
             });
 
@@ -204,11 +210,7 @@ namespace AnonymBs.Cmdlets
                     snapshot = _lastProgressSnapshot;
                 }
 
-                if (ShowEachFileName && !string.IsNullOrWhiteSpace(snapshot.LastBlobName) && !string.Equals(lastEmittedBlobName, snapshot.LastBlobName, StringComparison.Ordinal))
-                {
-                    lastEmittedBlobName = snapshot.LastBlobName;
-                    WriteDebug(snapshot.LastBlobName);
-                }
+                DrainBlobNameDebugQueue();
 
                 WriteProgressFromSnapshot(snapshot, isCompleted: false);
             }
@@ -229,16 +231,27 @@ namespace AnonymBs.Cmdlets
                 };
             }
 
+            DrainBlobNameDebugQueue();
             WriteProgressFromSnapshot(_lastProgressSnapshot, isCompleted: true);
 
             long doneItems = summary.ProcessedItems + summary.SkippedItems;
             WriteVerbose($"Total: [Discovered={summary.DiscoveredItems}, Processed={summary.ProcessedItems}, Skipped={summary.SkippedItems}, Failed={summary.FailedItems}, Elapsed={_swTotal.Elapsed}, Items per Seconds:{(doneItems / _swTotal.Elapsed.TotalSeconds)}]");
         }
 
+        private void DrainBlobNameDebugQueue()
+        {
+            while (_blobNamesToEmit.TryDequeue(out string blobName))
+            {
+                WriteDebug(blobName);
+            }
+        }
+
         private void WriteProgressFromSnapshot(ConvertAnonymBsContainerProgress snapshot, bool isCompleted)
         {
             long totalDone = snapshot.ProcessedItems + snapshot.SkippedItems;
-            string operation = $"Phase={snapshot.Phase}, Discovered={snapshot.DiscoveredItems}, Processed={snapshot.ProcessedItems}, Skipped={snapshot.SkippedItems}, Failed={snapshot.FailedItems}, Elapsed={_swTotal.Elapsed}";
+            bool isEstimatedProgress = snapshot.TotalItemsToProcess <= 0;
+            string progressMode = isEstimatedProgress ? "Estimated" : "Exact";
+            string operation = $"Phase={snapshot.Phase}, ProgressMode={progressMode}, Discovered={snapshot.DiscoveredItems}, Processed={snapshot.ProcessedItems}, Skipped={snapshot.SkippedItems}, Failed={snapshot.FailedItems}, Elapsed={_swTotal.Elapsed}";
 
             if (!string.IsNullOrWhiteSpace(snapshot.LastBlobName) && ShowEachFileName)
             {
@@ -255,6 +268,25 @@ namespace AnonymBs.Cmdlets
                     percentageComplete = 100;
                 }
                 _progressRecord.PercentComplete = percentageComplete;
+            }
+            else
+            {
+                int estimatedPercentageComplete = 0;
+                if (snapshot.DiscoveredItems > 0)
+                {
+                    estimatedPercentageComplete = (int)((totalDone * 100) / snapshot.DiscoveredItems);
+                    if (!isCompleted && estimatedPercentageComplete > 99)
+                    {
+                        estimatedPercentageComplete = 99;
+                    }
+
+                    if (estimatedPercentageComplete < 0)
+                    {
+                        estimatedPercentageComplete = 0;
+                    }
+                }
+
+                _progressRecord.PercentComplete = estimatedPercentageComplete;
             }
 
             if (isCompleted)
