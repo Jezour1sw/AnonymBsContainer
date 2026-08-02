@@ -33,7 +33,7 @@ namespace AnonymBs.Engine
         private readonly string _targetConnectionString;
         private readonly string _targetContainerName;
         private readonly string _targetAnonymContainerName;
-        private readonly Dictionary<string,Uri> _anonymizedSuffixList = new Dictionary<string, Uri>();
+        private readonly Dictionary<string, Uri> _anonymizedSuffixList = new Dictionary<string, Uri>();
         private readonly bool _isLoadedDefaultSuffix;
         private readonly string _defaultFileSuffix;
         private readonly int _maxParallelConvert;
@@ -42,13 +42,13 @@ namespace AnonymBs.Engine
 
 
         public ConvertAnonymBsContainer(
-            string sourceConnectionString, 
-            string sourceContainerName, 
-            string targetConnectionString, 
-            string targetContainerName, 
-            string targetAnonymContainerName,  
-            string defaultFileSuffix, 
-            int maxParallelConvert = 512, 
+            string sourceConnectionString,
+            string sourceContainerName,
+            string targetConnectionString,
+            string targetContainerName,
+            string targetAnonymContainerName,
+            string defaultFileSuffix,
+            int maxParallelConvert = 512,
             bool skipIfFileAlreadyExists = true,
             int retryDelayInSeconds = 10,
             int maxNumberOfRetry = 1000
@@ -71,12 +71,12 @@ namespace AnonymBs.Engine
 
             _isLoadedDefaultSuffix = Task.Run(() => InitLoadAnonymFilesDictionaryAsync()).Result;
         }
-        
+
 
         private async Task<bool> InitLoadAnonymFilesDictionaryAsync()
         {
             bool isDefaultFileSuffix = false;
-            await foreach(var oneAnonymizedBlob in _targetAnonymBlobContainerClient.GetBlobsAsync())
+            await foreach (var oneAnonymizedBlob in _targetAnonymBlobContainerClient.GetBlobsAsync())
             {
                 var suffix = GetSuffixFromBlobName(oneAnonymizedBlob.Name);
 
@@ -108,13 +108,13 @@ namespace AnonymBs.Engine
             return _isLoadedDefaultSuffix;
         }
 
-        public void ProcessBatch(WrapperBlobItem wrapperBlobItem)
+        public Task ProcessBatch(WrapperBlobItem wrapperBlobItem)
         {
             var options = new ParallelOptions()
             {
                 MaxDegreeOfParallelism = _maxParallelConvert
             };
-            var tasks = new BlockingCollection<Task>(_maxParallelConvert);
+            var tasks = new ConcurrentBag<Task>();
             Parallel.ForEach(wrapperBlobItem._listBlobItems, options, i =>
             {
                 Uri AnonymizedBlobUri = ComputeUriOfAnonymizedBlob(i.Name);
@@ -126,8 +126,7 @@ namespace AnonymBs.Engine
 
             });
 
-            Task allTasks = Task.WhenAll(tasks);
-            allTasks.Wait();
+            return Task.WhenAll(tasks);
         }
 
         public WrapperBlobItem LoadNextBatchForProcessing()
@@ -159,14 +158,14 @@ namespace AnonymBs.Engine
 
         private Task ConvertOneBlob(BlobClient blobClient, Uri anonymizedBlobUri)
         {
-            
+
             return blobClient.StartCopyFromUriAsync(anonymizedBlobUri);
         }
 
         private string GetSuffixFromBlobName(string blobName)
         {
             var splitedBlobname = blobName.Split('.');
-            return splitedBlobname[splitedBlobname.Length-1];
+            return splitedBlobname[splitedBlobname.Length - 1];
         }
 
         private Uri ComputeUriOfAnonymizedBlob(string blobName)

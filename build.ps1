@@ -20,7 +20,7 @@ param(
     $Configuration = 'Debug'
 )
 
-$netCore = 'netcoreapp3.1'
+$netCore = 'net8.0'
 $netFramework = 'net48'
 $moduleName = 'AnonymBs'
 $moduleNameFull = 'AnonymBsContainer'
@@ -88,18 +88,18 @@ $commonFiles = [System.Collections.Generic.HashSet[string]]::new()
 
 # Primary copy files form the netstandard2.0
 Get-ChildItem -Path "$PSScriptRoot/$moduleName.Engine/bin/$Configuration/netstandard2.0/publish" |
-Where-Object { $_.Extension -in '.dll', '.pdb' } |
-ForEach-Object { [void]$commonFiles.Add($_.Name); Copy-Item -LiteralPath $_.FullName -Destination $commonPath }
+    Where-Object { $_.Extension -in '.dll', '.pdb' } |
+    ForEach-Object { [void]$commonFiles.Add($_.Name); Copy-Item -LiteralPath $_.FullName -Destination $commonPath }
 	
 # Secondary copy files form the core
 Get-ChildItem -Path "$PSScriptRoot/$moduleName.Cmdlets/bin/$Configuration/$netCore/publish" |
-Where-Object { $_.Extension -in '.dll', '.pdb' -and -not $commonFiles.Contains($_.Name) } |
-ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $corePath }
+    Where-Object { $_.Extension -in '.dll', '.pdb' -and -not $commonFiles.Contains($_.Name) } |
+    ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $corePath }
 	
 # 3rd in the row copy files form the net461
 Get-ChildItem -Path "$PSScriptRoot/$moduleName.Cmdlets/bin/$Configuration/$netFramework/publish" |
-Where-Object { $_.Extension -in '.dll', '.pdb' -and -not $commonFiles.Contains($_.Name) } |
-ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $frameworkPath }
+    Where-Object { $_.Extension -in '.dll', '.pdb' -and -not $commonFiles.Contains($_.Name) } |
+    ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $frameworkPath }
 
 Write-Host "List the result dir"
 Get-ChildItem -Path $outPath -Recurse

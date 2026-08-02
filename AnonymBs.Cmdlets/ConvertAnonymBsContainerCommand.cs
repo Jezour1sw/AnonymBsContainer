@@ -18,6 +18,7 @@ using AnonymBs.Engine;
 using System;
 using System.Diagnostics;
 using System.Management.Automation;
+using System.Threading.Tasks;
 
 namespace AnonymBs.Cmdlets
 {
@@ -151,7 +152,7 @@ namespace AnonymBs.Cmdlets
             WriteVerbose($"SkipIfFileAlreadyExists: [{SkipIfFileAlreadyExists}]");
             WriteVerbose($"ShowEachFileName: [{ShowEachFileName}]");
             WriteVerbose($"SkipPreCountingBlobs: [{SkipPreCountingBlobs}]");
-            
+
 
             if (!_copyAnonymBsContainer.IsLoadedDefaultSuffix())
             {
@@ -179,7 +180,7 @@ namespace AnonymBs.Cmdlets
 
             bool isLoadingFinished;
             long totalItemCounter = 0;
-            if(!SkipPreCountingBlobs)
+            if (!SkipPreCountingBlobs)
             {
                 swCounterOfItems.Start();
                 WriteVerbose("Computing number of items to process...");
@@ -220,16 +221,23 @@ namespace AnonymBs.Cmdlets
                     Stopwatch swIncrement = new Stopwatch();
                     swIncrement.Start();
 
-                    _copyAnonymBsContainer.ProcessBatch(wrapperBlobItem);
+                    Task processBatchTask = _copyAnonymBsContainer.ProcessBatch(wrapperBlobItem);
+                    while (!processBatchTask.Wait(TimeSpan.FromSeconds(30)))
+                    {
+                        string heartbeatOperation = $"Running batch of {wrapperBlobItem.Count()} items. Batch elapsed: {swIncrement.Elapsed}. Total processed so far: {totalProcessedItemCounter}. Total elapsed: {_swTotal.Elapsed}.";
+                        _progressRecord.CurrentOperation = heartbeatOperation;
+                        WriteProgress(_progressRecord);
+                        WriteVerbose($"Heartbeat: {heartbeatOperation}");
+                    }
 
                     swIncrement.Stop();
                     var incrementItemCounter = wrapperBlobItem.Count();
                     totalProcessedItemCounter += incrementItemCounter;
 
-                    if(SkipPreCountingBlobs)
+                    if (SkipPreCountingBlobs)
                     {
                         WriteVerbose($"Progress: [Increment items {incrementItemCounter}, Elapsed={swIncrement.Elapsed}, Files per Seconds:{(incrementItemCounter / swIncrement.Elapsed.TotalSeconds)}], [Total items {totalProcessedItemCounter}, Elapsed:{_swTotal.Elapsed}, Files per Seconds:{(totalProcessedItemCounter / _swTotal.Elapsed.TotalSeconds)}] ");
-                    } 
+                    }
                     else
                     {
                         int percentageComplete = (int)((totalProcessedItemCounter * 100) / totalItemCounter);

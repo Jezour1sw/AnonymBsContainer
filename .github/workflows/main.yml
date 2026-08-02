@@ -4,14 +4,14 @@ name: Build
 on:
   push:
     branches:
-      - main
-      - release/*
+      - '**'
     tags:
       - release/*
   pull_request:
     branches:
       - main
       - release/*
+
 
 jobs:
   build:
@@ -21,42 +21,18 @@ jobs:
     
     steps:
       - name: Check Out Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
         #url: https://github.com/actions/checkout
 
       - name: Fetch all history for all tags and branches
         run: git fetch --prune --unshallow
 
         
-      - name: Configure .NET Core 3.1
-        uses: actions/setup-dotnet@v1
+      - name: Configure .NET SDK
+        uses: actions/setup-dotnet@v5
         #url: https://github.com/actions/setup-dotnet
         with:
-          dotnet-version: 3.1.x
-          
-      - name: Install component on windows 2022
-        shell: pwsh
-        run: |
-          Set-Location "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
-          $InstallPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
-          #$componentsToAdd = @(
-          #  "Microsoft.Net.Component.4.6.1.SDK"
-          #)
-          $componentsToAdd = @(
-            "Microsoft.Net.Component.4.8.0.SDK"
-          )
-          [string]$workloadArgs = $componentsToAdd | ForEach-Object {" --add " +  $_}
-          $Arguments = ('/c', "vs_installer.exe", 'modify', '--installPath', "`"$InstallPath`"",$workloadArgs, '--quiet', '--norestart', '--nocache')
-          $process = Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
-          if ($process.ExitCode -eq 0)
-          {
-              Write-Host "components have been successfully added"
-          }
-          else
-          {
-              Write-Host "components were not installed"
-              exit 1
-          }
+          dotnet-version: 8.0.x
 
 #      - name: Configure .NET 4.8.0
 #        uses: actions/setup-dotnet@v1
@@ -67,21 +43,29 @@ jobs:
       # Runs a single command using the runners shell
       - name: Rebuild the powershell module
         shell: pwsh
-        run: 
-          # PowerShell script 
+        run: |
+          # PowerShell script
           ./build.ps1 -Configuration 'Release'
 
       - name: Install gitversion as global tool
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/release/')
         shell: pwsh
-        run: 
+        run: |
           # PowerShell script
           dotnet tool install --global GitVersion.Tool;
 
       - name: Save package
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/release/')
         shell: pwsh
-        run: 
+        run: |
           # PowerShell script
-          $MajorMinorPatch = (dotnet-gitversion | ConvertFrom-Json).MajorMinorPatch;
+          [string]$gitVersionRaw = (dotnet-gitversion /showvariable MajorMinorPatch 2>&1 | Out-String);
+          $match = [regex]::Match($gitVersionRaw, '(?m)\b\d+\.\d+\.\d+\b');
+          if (-not $match.Success) {
+            throw "GitVersion returned unexpected MajorMinorPatch output: [$gitVersionRaw]"
+          }
+          [string]$MajorMinorPatch = $match.Value;
+          Write-Host "Resolved version: $MajorMinorPatch"
           ./packpackage.ps1 -Version $MajorMinorPatch;
 
       - run: echo ${{github.ref}}
@@ -89,7 +73,7 @@ jobs:
       - name: Publish Package
         if: github.ref == 'refs/heads/main'
         shell: pwsh
-        run:
+        run: |
           $nupkg = Get-ChildItem -Path "./out/nuget/*.nupkg" | Select-Object -First 1;
           dotnet nuget push $nupkg.FullName
           -s https://www.powershellgallery.com/
