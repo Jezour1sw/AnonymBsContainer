@@ -26,7 +26,6 @@ namespace AnonymBs.Cmdlets
     [Cmdlet(VerbsData.Convert, "AnonymBsContainer")]
     public class ConvertAnonymBsContainerCommand : PSCmdlet
     {
-        private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromSeconds(30);
         private ConvertAnonymBsContainer _copyAnonymBsContainer;
         private Stopwatch _swTotal = new Stopwatch();
         private ProgressRecord _progressRecord;
@@ -186,7 +185,7 @@ namespace AnonymBs.Cmdlets
         protected override void ProcessRecord()
         {
             TimeSpan heartbeatInterval = TimeSpan.FromSeconds(HeartbeatIntervalInSeconds);
-            var heartbeatCancellationTokenSource = new CancellationTokenSource();
+            string lastEmittedBlobName = string.Empty;
 
             var progressReporter = new Progress<ConvertAnonymBsContainerProgress>(snapshot =>
             {
@@ -194,46 +193,27 @@ namespace AnonymBs.Cmdlets
                 {
                     _lastProgressSnapshot = snapshot;
                 }
-
-                if (ShowEachFileName && !string.IsNullOrWhiteSpace(snapshot.LastBlobName))
-                {
-                    WriteDebug(snapshot.LastBlobName);
-                }
             });
 
-            var heartbeatTask = Task.Run(async () =>
+            Task<ConvertAnonymBsContainerSummary> processTask = _copyAnonymBsContainer.ProcessAllAsync(SkipPreCountingBlobs, progressReporter, CancellationToken.None);
+            while (!processTask.Wait(heartbeatInterval))
             {
-                while (!heartbeatCancellationTokenSource.Token.IsCancellationRequested)
+                ConvertAnonymBsContainerProgress snapshot;
+                lock (_progressSync)
                 {
-                    await Task.Delay(heartbeatInterval, heartbeatCancellationTokenSource.Token).ConfigureAwait(false);
-
-                    ConvertAnonymBsContainerProgress snapshot;
-                    lock (_progressSync)
-                    {
-                        snapshot = _lastProgressSnapshot;
-                    }
-
-                    WriteProgressFromSnapshot(snapshot, isCompleted: false);
+                    snapshot = _lastProgressSnapshot;
                 }
-            }, heartbeatCancellationTokenSource.Token);
 
-            ConvertAnonymBsContainerSummary summary = null;
-            try
-            {
-                summary = _copyAnonymBsContainer.ProcessAllAsync(SkipPreCountingBlobs, progressReporter, CancellationToken.None).GetAwaiter().GetResult();
+                if (ShowEachFileName && !string.IsNullOrWhiteSpace(snapshot.LastBlobName) && !string.Equals(lastEmittedBlobName, snapshot.LastBlobName, StringComparison.Ordinal))
+                {
+                    lastEmittedBlobName = snapshot.LastBlobName;
+                    WriteDebug(snapshot.LastBlobName);
+                }
+
+                WriteProgressFromSnapshot(snapshot, isCompleted: false);
             }
-            finally
-            {
-                heartbeatCancellationTokenSource.Cancel();
-                try
-                {
-                    heartbeatTask.GetAwaiter().GetResult();
-                }
-                catch (OperationCanceledException)
-                {
-                    // Expected when heartbeat loop is cancelled after processing completes.
-                }
-            }
+
+            ConvertAnonymBsContainerSummary summary = processTask.GetAwaiter().GetResult();
 
             lock (_progressSync)
             {
