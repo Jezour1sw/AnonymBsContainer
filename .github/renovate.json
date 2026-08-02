@@ -44,6 +44,16 @@
                 "nuget"
             ],
             "groupName": "nuget"
+        },
+        {
+            "description": "Keep System.Management.Automation compatible with net8 target",
+            "matchManagers": [
+                "nuget"
+            ],
+            "matchPackageNames": [
+                "System.Management.Automation"
+            ],
+            "allowedVersions": "<7.5.0"
         }
     ]
 }
