@@ -21,7 +21,7 @@ jobs:
     
     steps:
       - name: Check Out Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         #url: https://github.com/actions/checkout
 
       - name: Fetch all history for all tags and branches
@@ -29,7 +29,7 @@ jobs:
 
         
       - name: Configure .NET SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         #url: https://github.com/actions/setup-dotnet
         with:
           dotnet-version: 8.0.x
