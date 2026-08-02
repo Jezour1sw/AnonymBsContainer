@@ -18,6 +18,7 @@ using AnonymBs.Engine;
 using System;
 using System.Diagnostics;
 using System.Management.Automation;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AnonymBs.Cmdlets
@@ -29,6 +30,8 @@ namespace AnonymBs.Cmdlets
         private ConvertAnonymBsContainer _copyAnonymBsContainer;
         private Stopwatch _swTotal = new Stopwatch();
         private ProgressRecord _progressRecord;
+        private ConvertAnonymBsContainerProgress _lastProgressSnapshot = new ConvertAnonymBsContainerProgress();
+        private readonly object _progressSync = new object();
 
         [Parameter(
             Position = 0,
@@ -122,6 +125,14 @@ namespace AnonymBs.Cmdlets
         )]
         public int MaxNumberOfRetry = 1000;
 
+        [Parameter(
+            Position = 12,
+            Mandatory = false,
+            HelpMessage = "Heartbeat interval in seconds for progress logging during long-running operations. Default is 30 seconds."
+        )]
+        [ValidateRange(5, 600)]
+        public int HeartbeatIntervalInSeconds = 30;
+
 
         protected override void BeginProcessing()
         {
@@ -153,6 +164,7 @@ namespace AnonymBs.Cmdlets
             WriteVerbose($"SkipIfFileAlreadyExists: [{SkipIfFileAlreadyExists}]");
             WriteVerbose($"ShowEachFileName: [{ShowEachFileName}]");
             WriteVerbose($"SkipPreCountingBlobs: [{SkipPreCountingBlobs}]");
+            WriteVerbose($"HeartbeatIntervalInSeconds: [{HeartbeatIntervalInSeconds}]");
 
 
             if (!_copyAnonymBsContainer.IsLoadedDefaultSuffix())
@@ -173,134 +185,107 @@ namespace AnonymBs.Cmdlets
 
         protected override void ProcessRecord()
         {
+            TimeSpan heartbeatInterval = TimeSpan.FromSeconds(HeartbeatIntervalInSeconds);
+            var heartbeatCancellationTokenSource = new CancellationTokenSource();
 
-            long totalProcessedItemCounter = 0;
-
-            Stopwatch swCounterOfItems = new Stopwatch();
-
-
-            bool isLoadingFinished;
-            long totalItemCounter = 0;
-            if (!SkipPreCountingBlobs)
+            var progressReporter = new Progress<ConvertAnonymBsContainerProgress>(snapshot =>
             {
-                swCounterOfItems.Start();
-                WriteVerbose("Computing number of items to process...");
-                do
+                lock (_progressSync)
                 {
-                    Stopwatch swLoadBatch = Stopwatch.StartNew();
-                    Task<WrapperBlobItem> loadBatchTask = Task.Run(() => _copyAnonymBsContainer.LoadNextBatchForProcessing());
-                    while (!loadBatchTask.Wait(HeartbeatInterval))
+                    _lastProgressSnapshot = snapshot;
+                }
+
+                if (ShowEachFileName && !string.IsNullOrWhiteSpace(snapshot.LastBlobName))
+                {
+                    WriteDebug(snapshot.LastBlobName);
+                }
+            });
+
+            var heartbeatTask = Task.Run(async () =>
+            {
+                while (!heartbeatCancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    await Task.Delay(heartbeatInterval, heartbeatCancellationTokenSource.Token).ConfigureAwait(false);
+
+                    ConvertAnonymBsContainerProgress snapshot;
+                    lock (_progressSync)
                     {
-                        string loadingHeartbeat = $"Waiting for next batch while pre-counting. Current discovered: {totalItemCounter}. Load elapsed: {swLoadBatch.Elapsed}. Total elapsed: {_swTotal.Elapsed}.";
-                        _progressRecord.CurrentOperation = loadingHeartbeat;
-                        WriteProgress(_progressRecord);
-                        WriteDebug($"Heartbeat: {loadingHeartbeat}");
-                        WriteVerbose($"Heartbeat: {loadingHeartbeat}");
+                        snapshot = _lastProgressSnapshot;
                     }
 
-                    WrapperBlobItem wrapperBlobItem = loadBatchTask.Result;
-                    swLoadBatch.Stop();
-                    totalItemCounter += wrapperBlobItem.Count();
-                    WriteVerbose($"Curretly found: {totalItemCounter} items. [Counting time of items to process: {swCounterOfItems.Elapsed}]");
-                    isLoadingFinished = wrapperBlobItem.IsLoadingFinished();
-
+                    WriteProgressFromSnapshot(snapshot, isCompleted: false);
                 }
-                while (!isLoadingFinished);
+            }, heartbeatCancellationTokenSource.Token);
 
-                swCounterOfItems.Stop();
-                WriteVerbose($"Items to process: {totalItemCounter} [Counting time of items to process: {swCounterOfItems.Elapsed}]");
+            ConvertAnonymBsContainerSummary summary = null;
+            try
+            {
+                summary = _copyAnonymBsContainer.ProcessAllAsync(SkipPreCountingBlobs, progressReporter, CancellationToken.None).GetAwaiter().GetResult();
+            }
+            finally
+            {
+                heartbeatCancellationTokenSource.Cancel();
+                try
+                {
+                    heartbeatTask.GetAwaiter().GetResult();
+                }
+                catch (OperationCanceledException)
+                {
+                    // Expected when heartbeat loop is cancelled after processing completes.
+                }
             }
 
-
-
-
-
-            if (totalItemCounter > 0 || SkipPreCountingBlobs)
+            lock (_progressSync)
             {
-
-                do
+                _lastProgressSnapshot = new ConvertAnonymBsContainerProgress
                 {
-                    Stopwatch swLoadBatch = Stopwatch.StartNew();
-                    Task<WrapperBlobItem> loadBatchTask = Task.Run(() => _copyAnonymBsContainer.LoadNextBatchForProcessing());
-                    while (!loadBatchTask.Wait(HeartbeatInterval))
-                    {
-                        string loadingHeartbeat = $"Waiting for next batch to process. Total processed so far: {totalProcessedItemCounter}. Load elapsed: {swLoadBatch.Elapsed}. Total elapsed: {_swTotal.Elapsed}.";
-                        _progressRecord.CurrentOperation = loadingHeartbeat;
-                        WriteProgress(_progressRecord);
-                        WriteDebug($"Heartbeat: {loadingHeartbeat}");
-                        WriteVerbose($"Heartbeat: {loadingHeartbeat}");
-                    }
-
-                    WrapperBlobItem wrapperBlobItem = loadBatchTask.Result;
-                    swLoadBatch.Stop();
-
-                    if (ShowEachFileName)
-                    {
-                        foreach (var oneBlobName in wrapperBlobItem.GetNames())
-                        {
-                            WriteDebug(oneBlobName);
-                        }
-                    }
-
-
-                    Stopwatch swIncrement = new Stopwatch();
-                    swIncrement.Start();
-
-                    Task processBatchTask = _copyAnonymBsContainer.ProcessBatch(wrapperBlobItem);
-                    while (!processBatchTask.Wait(HeartbeatInterval))
-                    {
-                        string heartbeatOperation = $"Running batch of {wrapperBlobItem.Count()} items. Batch elapsed: {swIncrement.Elapsed}. Total processed so far: {totalProcessedItemCounter}. Total elapsed: {_swTotal.Elapsed}.";
-                        _progressRecord.CurrentOperation = heartbeatOperation;
-                        WriteProgress(_progressRecord);
-                        WriteDebug($"Heartbeat: {heartbeatOperation}");
-                        WriteVerbose($"Heartbeat: {heartbeatOperation}");
-                    }
-
-                    swIncrement.Stop();
-                    var incrementItemCounter = wrapperBlobItem.Count();
-                    totalProcessedItemCounter += incrementItemCounter;
-
-                    if (SkipPreCountingBlobs)
-                    {
-                        WriteDebug($"Progress: [Increment items {incrementItemCounter}, Elapsed={swIncrement.Elapsed}, Files per Seconds:{(incrementItemCounter / swIncrement.Elapsed.TotalSeconds)}], [Total items {totalProcessedItemCounter}, Elapsed:{_swTotal.Elapsed}, Files per Seconds:{(totalProcessedItemCounter / _swTotal.Elapsed.TotalSeconds)}]");
-                        WriteVerbose($"Progress: [Increment items {incrementItemCounter}, Elapsed={swIncrement.Elapsed}, Files per Seconds:{(incrementItemCounter / swIncrement.Elapsed.TotalSeconds)}], [Total items {totalProcessedItemCounter}, Elapsed:{_swTotal.Elapsed}, Files per Seconds:{(totalProcessedItemCounter / _swTotal.Elapsed.TotalSeconds)}] ");
-                    }
-                    else
-                    {
-                        int percentageComplete = (int)((totalProcessedItemCounter * 100) / totalItemCounter);
-
-                        WriteDebug($"Progress: [Increment items {incrementItemCounter}, Elapsed={swIncrement.Elapsed}, Files per Seconds:{(incrementItemCounter / swIncrement.Elapsed.TotalSeconds)}], [Total items {totalProcessedItemCounter}, Elapsed:{_swTotal.Elapsed}, Files per Seconds:{(totalProcessedItemCounter / _swTotal.Elapsed.TotalSeconds)}] {percentageComplete}% [{totalProcessedItemCounter}/{totalItemCounter}]");
-                        WriteVerbose($"Progress: [Increment items {incrementItemCounter}, Elapsed={swIncrement.Elapsed}, Files per Seconds:{(incrementItemCounter / swIncrement.Elapsed.TotalSeconds)}], [Total items {totalProcessedItemCounter}, Elapsed:{_swTotal.Elapsed}, Files per Seconds:{(totalProcessedItemCounter / _swTotal.Elapsed.TotalSeconds)}] {percentageComplete}% [{totalProcessedItemCounter}/{totalItemCounter}]");
-
-
-                        if (percentageComplete >= 100)
-                        {
-                            _progressRecord.PercentComplete = 100;
-                            _progressRecord.RecordType = ProgressRecordType.Completed;
-                        }
-                        else
-                        {
-                            _progressRecord.PercentComplete = percentageComplete;
-                        }
-
-                    }
-
-
-                    WriteProgress(_progressRecord);
-
-                    isLoadingFinished = wrapperBlobItem.IsLoadingFinished();
-
-                }
-                while (!isLoadingFinished);
+                    Phase = "completed",
+                    TotalItemsToProcess = summary.TotalItemsToProcess,
+                    DiscoveredItems = summary.DiscoveredItems,
+                    ProcessedItems = summary.ProcessedItems,
+                    SkippedItems = summary.SkippedItems,
+                    FailedItems = summary.FailedItems,
+                    LastBlobName = string.Empty
+                };
             }
 
-            _progressRecord.PercentComplete = 100;
-            _progressRecord.RecordType = ProgressRecordType.Completed;
+            WriteProgressFromSnapshot(_lastProgressSnapshot, isCompleted: true);
+
+            long doneItems = summary.ProcessedItems + summary.SkippedItems;
+            WriteVerbose($"Total: [Discovered={summary.DiscoveredItems}, Processed={summary.ProcessedItems}, Skipped={summary.SkippedItems}, Failed={summary.FailedItems}, Elapsed={_swTotal.Elapsed}, Items per Seconds:{(doneItems / _swTotal.Elapsed.TotalSeconds)}]");
+        }
+
+        private void WriteProgressFromSnapshot(ConvertAnonymBsContainerProgress snapshot, bool isCompleted)
+        {
+            long totalDone = snapshot.ProcessedItems + snapshot.SkippedItems;
+            string operation = $"Phase={snapshot.Phase}, Discovered={snapshot.DiscoveredItems}, Processed={snapshot.ProcessedItems}, Skipped={snapshot.SkippedItems}, Failed={snapshot.FailedItems}, Elapsed={_swTotal.Elapsed}";
+
+            if (!string.IsNullOrWhiteSpace(snapshot.LastBlobName) && ShowEachFileName)
+            {
+                operation += $", Blob={snapshot.LastBlobName}";
+            }
+
+            _progressRecord.CurrentOperation = operation;
+
+            if (snapshot.TotalItemsToProcess > 0)
+            {
+                int percentageComplete = (int)((totalDone * 100) / snapshot.TotalItemsToProcess);
+                if (percentageComplete > 100)
+                {
+                    percentageComplete = 100;
+                }
+                _progressRecord.PercentComplete = percentageComplete;
+            }
+
+            if (isCompleted)
+            {
+                _progressRecord.PercentComplete = 100;
+                _progressRecord.RecordType = ProgressRecordType.Completed;
+            }
 
             WriteProgress(_progressRecord);
-
-            WriteVerbose($"Total: [{totalProcessedItemCounter}, Elapsed={_swTotal.Elapsed}, Files per Seconds:{(totalProcessedItemCounter / _swTotal.Elapsed.TotalSeconds)}]");
-
+            WriteDebug($"Heartbeat: {operation}");
+            WriteVerbose($"Heartbeat: {operation}");
         }
 
 
