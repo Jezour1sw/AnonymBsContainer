@@ -127,4 +127,4 @@ $xml.AppendChild($packageElement) | Out-Null
 $xml.save($nuspecFullName)
 
 #create package
-. $nuget pack $nuspecFullName -OutputDirectory $nugetDir
+. $nuget pack $nuspecFullName -OutputDirectory $nugetDir -NoPackageAnalysis

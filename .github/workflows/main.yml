@@ -74,11 +74,18 @@ jobs:
         if: github.ref == 'refs/heads/main'
         shell: pwsh
         run: |
-          $nupkg = Get-ChildItem -Path "./out/nuget/*.nupkg" | Select-Object -First 1;
-          dotnet nuget push $nupkg.FullName
-          -s https://www.powershellgallery.com/
-          -k $env:PSGALLERY_API_KEY
-          --skip-duplicate
-          --no-symbols 1
+          if ([string]::IsNullOrWhiteSpace($env:PSGALLERY_API_KEY)) {
+            throw 'PSGALLERY_API_KEY is missing or empty. Configure repository secret PSGALLERY_API_KEY.'
+          }
+          $nupkg = Get-ChildItem -Path "./out/nuget/*.nupkg" | Sort-Object LastWriteTime -Descending | Select-Object -First 1;
+          if ($null -eq $nupkg) {
+            throw 'No package was found in ./out/nuget/*.nupkg. The Save package step likely failed.'
+          }
+          Write-Host "Publishing package: $($nupkg.FullName)"
+          dotnet nuget push $nupkg.FullName `
+            -s https://www.powershellgallery.com/ `
+            -k $env:PSGALLERY_API_KEY `
+            --skip-duplicate `
+            --no-symbols
         env:
           PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
