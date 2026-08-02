@@ -26,6 +26,7 @@ namespace AnonymBs.Cmdlets
     [Cmdlet(VerbsData.Convert, "AnonymBsContainer")]
     public class ConvertAnonymBsContainerCommand : PSCmdlet
     {
+        private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromSeconds(30);
         private ConvertAnonymBsContainer _copyAnonymBsContainer;
         private Stopwatch _swTotal = new Stopwatch();
         private ProgressRecord _progressRecord;
