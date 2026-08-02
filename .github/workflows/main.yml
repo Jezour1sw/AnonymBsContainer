@@ -57,7 +57,11 @@ jobs:
         shell: pwsh
         run: |
           # PowerShell script
-          $MajorMinorPatch = (dotnet-gitversion /showvariable MajorMinorPatch).Trim();
+          [string[]]$gitVersionOutput = dotnet-gitversion /showvariable MajorMinorPatch /verbosity quiet;
+          [string]$MajorMinorPatch = ($gitVersionOutput | Select-Object -Last 1).Trim();
+          if ($MajorMinorPatch -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
+            throw "GitVersion returned unexpected MajorMinorPatch value: [$MajorMinorPatch]"
+          }
           if ([string]::IsNullOrWhiteSpace($MajorMinorPatch)) {
             throw 'GitVersion did not return MajorMinorPatch.'
           }
