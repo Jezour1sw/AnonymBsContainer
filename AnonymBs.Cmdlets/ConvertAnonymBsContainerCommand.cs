@@ -32,6 +32,7 @@ namespace AnonymBs.Cmdlets
         private ProgressRecord _progressRecord;
         private ConvertAnonymBsContainerProgress _lastProgressSnapshot = new ConvertAnonymBsContainerProgress();
         private ConcurrentQueue<string> _blobNamesToEmit = new ConcurrentQueue<string>();
+        private ConcurrentQueue<string> _errorMessagesToEmit = new ConcurrentQueue<string>();
         private readonly object _progressSync = new object();
 
         [Parameter(
@@ -199,6 +200,11 @@ namespace AnonymBs.Cmdlets
                 {
                     _blobNamesToEmit.Enqueue(snapshot.LastBlobName);
                 }
+
+                if (!string.IsNullOrWhiteSpace(snapshot.LastErrorMessage))
+                {
+                    _errorMessagesToEmit.Enqueue(snapshot.LastErrorMessage);
+                }
             });
 
             Task<ConvertAnonymBsContainerSummary> processTask = _copyAnonymBsContainer.ProcessAllAsync(SkipPreCountingBlobs, progressReporter, CancellationToken.None);
@@ -244,6 +250,11 @@ namespace AnonymBs.Cmdlets
             {
                 WriteDebug(blobName);
             }
+
+            while (_errorMessagesToEmit.TryDequeue(out string errorMessage))
+            {
+                WriteWarning(errorMessage);
+            }
         }
 
         private void WriteProgressFromSnapshot(ConvertAnonymBsContainerProgress snapshot, bool isCompleted)
@@ -256,6 +267,11 @@ namespace AnonymBs.Cmdlets
             if (!string.IsNullOrWhiteSpace(snapshot.LastBlobName) && ShowEachFileName)
             {
                 operation += $", Blob={snapshot.LastBlobName}";
+            }
+
+            if (!string.IsNullOrWhiteSpace(snapshot.LastErrorMessage))
+            {
+                operation += $", LastError={snapshot.LastErrorMessage}";
             }
 
             _progressRecord.CurrentOperation = operation;
