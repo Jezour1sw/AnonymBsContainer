@@ -44,9 +44,11 @@ namespace AnonymBs.Cmdlets
         {
             string assemblyFileName = $"{assemblyName.Name}.dll";
 
-            // Make sure we allow other common PowerShell dependencies to be loaded by PowerShell
-            // But specifically exclude Azure.Storage.Blobs since we want to use a different version here
-            if (!assemblyName.Name.Equals("Azure.Storage.Blobs", StringComparison.OrdinalIgnoreCase))
+            // Make sure we allow other common PowerShell dependencies to be loaded by PowerShell.
+            // Exclude assemblies that PS ships with an older version than what our packages require,
+            // so they are always loaded from the module's Common directory instead.
+            if (!assemblyName.Name.Equals("Azure.Storage.Blobs", StringComparison.OrdinalIgnoreCase)
+                && !assemblyName.Name.Equals("System.Diagnostics.DiagnosticSource", StringComparison.OrdinalIgnoreCase))
             {
                 string psHomeAsmPath = Path.Join(s_psHome, assemblyFileName);
                 if (File.Exists(psHomeAsmPath))
