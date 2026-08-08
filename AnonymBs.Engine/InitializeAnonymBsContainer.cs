@@ -15,7 +15,6 @@
 */
 
 using Azure.Storage.Blobs;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -58,7 +57,7 @@ namespace AnonymBs.Engine
 
             await _blobContainerClient.CreateIfNotExistsAsync();
 
-            var tasks = new BlockingCollection<Task>(maxParallelUpload);
+            var tasks = new List<Task>();
             int i = 0;
             foreach (var oneFile in _directoryInitializeDirPath.GetFiles())
             {
@@ -67,7 +66,7 @@ namespace AnonymBs.Engine
                 {
                     // next iteration
                     await Task.WhenAll(tasks);
-
+                    tasks.Clear();
                     i = 0;
                 }
                 tasks.Add(UploadOneFile(_blobContainerClient.GetBlobClient(oneFile.Name), oneFile.FullName));
