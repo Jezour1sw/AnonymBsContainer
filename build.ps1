@@ -62,7 +62,8 @@ New-Item -Path $anonymizedDocumentsPath -ItemType Directory
 
 Push-Location "$PSScriptRoot/$moduleName.Engine"
 try {
-    dotnet publish -c $Configuration
+    dotnet publish -f $netCore -c $Configuration
+    dotnet publish -f $netFramework -c $Configuration
 }
 finally {
     Pop-Location
@@ -83,11 +84,10 @@ Copy-Item -Path "$PSScriptRoot/default-anonymized-documents" -Destination $outPa
 Copy-Item -Path "$PSScriptRoot/$moduleNameFull.psd1" -Destination $outPath
 
 
-# Create list of files as HashSet.
+# Primary copy files from the net8.0 Engine publish (Common - shared between Core and Framework)
 $commonFiles = [System.Collections.Generic.HashSet[string]]::new()
 
-# Primary copy files form the netstandard2.0
-Get-ChildItem -Path "$PSScriptRoot/$moduleName.Engine/bin/$Configuration/netstandard2.0/publish" |
+Get-ChildItem -Path "$PSScriptRoot/$moduleName.Engine/bin/$Configuration/$netCore/publish" |
     Where-Object { $_.Extension -in '.dll' } |
     ForEach-Object { [void]$commonFiles.Add($_.Name); Copy-Item -LiteralPath $_.FullName -Destination $commonPath }
 	
@@ -96,9 +96,15 @@ Get-ChildItem -Path "$PSScriptRoot/$moduleName.Cmdlets/bin/$Configuration/$netCo
     Where-Object { $_.Extension -in '.dll' -and -not $commonFiles.Contains($_.Name) } |
     ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $corePath }
 
-# 3rd in the row copy files form the net461
+# 3rd in the row copy files form the net48 Engine and Cmdlets publish
+$frameworkFiles = [System.Collections.Generic.HashSet[string]]::new()
+
+Get-ChildItem -Path "$PSScriptRoot/$moduleName.Engine/bin/$Configuration/$netFramework/publish" |
+    Where-Object { $_.Extension -in '.dll' } |
+    ForEach-Object { [void]$frameworkFiles.Add($_.Name); Copy-Item -LiteralPath $_.FullName -Destination $frameworkPath }
+
 Get-ChildItem -Path "$PSScriptRoot/$moduleName.Cmdlets/bin/$Configuration/$netFramework/publish" |
-    Where-Object { $_.Extension -in '.dll' -and -not $commonFiles.Contains($_.Name) } |
+    Where-Object { $_.Extension -in '.dll' -and -not $frameworkFiles.Contains($_.Name) } |
     ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $frameworkPath }
 
 Write-Host "List the result dir"
