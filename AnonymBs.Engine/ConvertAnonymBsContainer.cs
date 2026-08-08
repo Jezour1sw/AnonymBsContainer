@@ -35,8 +35,6 @@ namespace AnonymBs.Engine
         public long SkippedItems { get; set; }
         public long FailedItems { get; set; }
         public string LastBlobName { get; set; } = string.Empty;
-        public string LastErrorMessage { get; set; } = string.Empty;
-        public string LastErrorBlobName { get; set; } = string.Empty;
     }
 
     public class ConvertAnonymBsContainerSummary
@@ -156,7 +154,7 @@ namespace AnonymBs.Engine
                     cancellationToken.ThrowIfCancellationRequested();
 
                     Interlocked.Increment(ref discoveredItems);
-                    ReportProgress(progress, "processing", totalItemsToProcess, discoveredItems, processedItems, skippedItems, failedItems, oneBlob.Name, string.Empty, string.Empty);
+                    ReportProgress(progress, "processing", totalItemsToProcess, discoveredItems, processedItems, skippedItems, failedItems, oneBlob.Name);
 
                     await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -187,7 +185,7 @@ namespace AnonymBs.Engine
                 await Task.WhenAll(workerTasks).ConfigureAwait(false);
             }
 
-            ReportProgress(progress, "completed", totalItemsToProcess, discoveredItems, processedItems, skippedItems, failedItems, string.Empty, string.Empty, string.Empty);
+            ReportProgress(progress, "completed", totalItemsToProcess, discoveredItems, processedItems, skippedItems, failedItems, string.Empty);
 
             return new ConvertAnonymBsContainerSummary
             {
@@ -262,11 +260,11 @@ namespace AnonymBs.Engine
                 totalItems++;
                 if ((totalItems % _maxParallelConvert) == 0)
                 {
-                    ReportProgress(progress, "counting", totalItems, totalItems, 0, 0, 0, oneBlob.Name, string.Empty, string.Empty);
+                    ReportProgress(progress, "counting", totalItems, totalItems, 0, 0, 0, oneBlob.Name);
                 }
             }
 
-            ReportProgress(progress, "counting-completed", totalItems, totalItems, 0, 0, 0, string.Empty, string.Empty, string.Empty);
+            ReportProgress(progress, "counting-completed", totalItems, totalItems, 0, 0, 0, string.Empty);
             return totalItems;
         }
 
@@ -284,8 +282,6 @@ namespace AnonymBs.Engine
             Func<long> getSkipped,
             Func<long> getFailed)
         {
-            string errorMessage = string.Empty;
-            string errorBlobName = string.Empty;
             try
             {
                 Uri anonymizedBlobUri = ComputeUriOfAnonymizedBlob(oneBlob.Name);
@@ -308,15 +304,14 @@ namespace AnonymBs.Engine
                     incrementProcessed();
                 }
             }
-            catch (Exception ex)
+            catch
             {
                 incrementFailed();
-                errorBlobName = oneBlob.Name;
-                errorMessage = $"Blob={oneBlob.Name}, Error={ex.GetType().Name}: {ex.Message}";
+                throw;
             }
             finally
             {
-                ReportProgress(progress, "processing", totalItemsToProcess, getDiscovered(), getProcessed(), getSkipped(), getFailed(), oneBlob.Name, errorBlobName, errorMessage);
+                ReportProgress(progress, "processing", totalItemsToProcess, getDiscovered(), getProcessed(), getSkipped(), getFailed(), oneBlob.Name);
                 semaphore.Release();
             }
         }
@@ -329,9 +324,7 @@ namespace AnonymBs.Engine
             long processedItems,
             long skippedItems,
             long failedItems,
-            string lastBlobName,
-            string lastErrorBlobName,
-            string lastErrorMessage)
+            string lastBlobName)
         {
             progress?.Report(new ConvertAnonymBsContainerProgress
             {
@@ -341,9 +334,7 @@ namespace AnonymBs.Engine
                 ProcessedItems = processedItems,
                 SkippedItems = skippedItems,
                 FailedItems = failedItems,
-                LastBlobName = lastBlobName ?? string.Empty,
-                LastErrorBlobName = lastErrorBlobName ?? string.Empty,
-                LastErrorMessage = lastErrorMessage ?? string.Empty
+                LastBlobName = lastBlobName ?? string.Empty
             });
         }
 
