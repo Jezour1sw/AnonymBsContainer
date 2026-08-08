@@ -52,6 +52,7 @@
 
         PSData = @{
             ProjectURI = 'https://github.com/Jezour1sw/AnonymBsContainer#readme'
+            LicenseUri = 'https://raw.githubusercontent.com/Jezour1sw/AnonymBsContainer/refs/heads/main/LICENSE'
         } # End of PSData hashtable
 
     } # End of PrivateData hashtable
