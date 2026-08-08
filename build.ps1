@@ -93,12 +93,12 @@ Get-ChildItem -Path "$PSScriptRoot/$moduleName.Engine/bin/$Configuration/netstan
 	
 # Secondary copy files form the core
 Get-ChildItem -Path "$PSScriptRoot/$moduleName.Cmdlets/bin/$Configuration/$netCore/publish" |
-    Where-Object { $_.Name -eq "$moduleName.Cmdlets.dll" -and -not $commonFiles.Contains($_.Name) } |
+    Where-Object { $_.Extension -in '.dll' -and -not $commonFiles.Contains($_.Name) } |
     ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $corePath }
-	
+
 # 3rd in the row copy files form the net461
 Get-ChildItem -Path "$PSScriptRoot/$moduleName.Cmdlets/bin/$Configuration/$netFramework/publish" |
-    Where-Object { $_.Name -eq "$moduleName.Cmdlets.dll" -and -not $commonFiles.Contains($_.Name) } |
+    Where-Object { $_.Extension -in '.dll' -and -not $commonFiles.Contains($_.Name) } |
     ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $frameworkPath }
 
 Write-Host "List the result dir"
