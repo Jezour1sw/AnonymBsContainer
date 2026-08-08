@@ -48,7 +48,8 @@ namespace AnonymBs.Cmdlets
             // Exclude assemblies that PS ships with an older version than what our packages require,
             // so they are always loaded from the module's Common directory instead.
             if (!assemblyName.Name.Equals("Azure.Storage.Blobs", StringComparison.OrdinalIgnoreCase)
-                && !assemblyName.Name.Equals("System.Diagnostics.DiagnosticSource", StringComparison.OrdinalIgnoreCase))
+                && !assemblyName.Name.Equals("System.Diagnostics.DiagnosticSource", StringComparison.OrdinalIgnoreCase)
+                && !assemblyName.Name.Equals("System.Text.Json", StringComparison.OrdinalIgnoreCase))
             {
                 string psHomeAsmPath = Path.Join(s_psHome, assemblyFileName);
                 if (File.Exists(psHomeAsmPath))
